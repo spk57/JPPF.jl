@@ -1,4 +1,4 @@
-# JPPF.jl
+# JPPF
 ## Julia Programmers Personal Finance Tools
 
 Collection of Personal Fiance tools 
