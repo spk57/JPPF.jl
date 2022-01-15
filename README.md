@@ -20,7 +20,7 @@ Technology usage: Julia, Excel, Jupyter
 #### Model Run
 1. Enter the model configuration, planned expenses, income, assets and liabilties in the spreadsheet
 2. change directory to JPPF
-3. julia --project Retirement.jl [-D] [--save savePath]  [inputPath]
+3. julia --project ./src/Retirement.jl [-D] [--save savePath]  [inputPath]
 4. Note: savePath defaults to output/RetirementRun(now).xlsx and inputPath is data/Retirement.xlsx
 #### View Model Results
 1. change directory to JPPF

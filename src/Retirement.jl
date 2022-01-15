@@ -40,10 +40,6 @@ s=ArgParseSettings()
   required=false
 end
 
-if !isdir(outDir)
-  mkdir(outDir)
-end
-
 logmsg(msg)=string(now(), " ", msg)
 rows(df::DataFrame)=size(df, 1)
 readxl(file, sheet)=DataFrame(XLSX.readtable(file, sheet)...)
@@ -330,8 +326,11 @@ function run(ARGS)
   @info logmsg("Completed model run")
 
   #Save model run
+  if !isdir(outDir)
+    mkdir(outDir)
+  end
+  @info logmsg("Saving output to $outputPath")
   saveRunExcel(incomeDF, expenseDF, assetsDF, liabilityDF, net, outputPath)
-  @info logmsg("Saved output to $outputPath")
 end
 
 #ENV["JULIA_DEBUG"]=all
