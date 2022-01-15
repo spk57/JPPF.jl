@@ -98,15 +98,13 @@ function getInitialValues(dataFileName)
   @debug logmsg("Asset rows: $(rows(assets))")
   liabilities=readxl(dataFileName, "Liabilities")
   @debug logmsg("Liability rows: $(rows(liabilities))")
-  rules=readxl(dataFileName, "Rules")
-  @debug logmsg("Rule rows: $(rows(rules))")
   constantSheet=readxl(dataFileName, "Constants")
   @debug logmsg("Constant rows: $(rows(constantSheet))")
   @info logmsg("Completed reading input file")
 
   constants = df2Dict!(constantSheet)
   @debug logmsg("Constants: $constants")
-  income, expenses, assets, liabilities, rules, constants
+  income, expenses, assets, liabilities, constants
 end
 
 "Convert Decimal Age to Year month"
@@ -255,8 +253,9 @@ function saveRunExcel(incomeDF, expenseDF, assetsDF, liabilityDF, netIncomeDF, o
     )
 end
 
-"Main processing method"
+"Main workflow method"
 function run(ARGS)
+  #Get the configuration 
   args=parse_args(ARGS, s)
   about()
   @info logmsg("Started")
@@ -268,7 +267,9 @@ function run(ARGS)
   @debug logmsg("Current directory: $startDir")
   dataFileName=args["path"]
   @info logmsg("Reading configuration from file $dataFileName")
-  initialIncome, initialExpenses, initialAssets, initialLiabilities, rules, constants =  getInitialValues(dataFileName)
+
+  #Set initial values
+  initialIncome, initialExpenses, initialAssets, initialLiabilities, constants =  getInitialValues(dataFileName)
 
   initIncomeSum=calcInitial(initialIncome, string(:Income))
   initExpensesSum=calcInitial(initialExpenses, string(:Expenses))
@@ -292,11 +293,14 @@ function run(ARGS)
   @debug "Initial Values $initialValues"
   output=initializeDF(initialValues)
   @debug "Output: $output"
+
+  #Reshape tables with categories in columns and one row per period (Month)
   incomeDF=reshapeLedger(initialIncome, :Description, :Initial)
   expenseDF=reshapeLedger(initialExpenses, :Description, :Initial)
   assetsDF=reshapeLedger(initialAssets, :Description, :Initial)
   liabilityDF=reshapeLedger(initialLiabilities, :Description, :Initial)
 
+  #Grow each category for the number of periods by the rule and factors associated with it
   incomeMap=mapGrowthFactors(initialIncome)
   @debug "incomemap: $incomeMap"
   expenseMap=mapGrowthFactors(initialExpenses)
@@ -324,7 +328,6 @@ function run(ARGS)
   #Save model run
   saveRunExcel(incomeDF, expenseDF, assetsDF, liabilityDF, net, outputPath)
   @info logmsg("Saved output to $outputPath")
-  #TODO Add monthly analysis 
 end
 
 #ENV["JULIA_DEBUG"]=all
