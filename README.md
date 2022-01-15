@@ -26,7 +26,7 @@ Technology usage: Julia, Excel, Jupyter
 1. change directory to JPPF
 2. julia --project
 3. using IJulia
-4. notebook()
+4. notebook(dir="./src")
 5. open Retirement.ipynb
 6. Update the runFile variable to point to the analysis file
 7. Run the cells 

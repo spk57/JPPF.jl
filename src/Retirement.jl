@@ -40,6 +40,10 @@ s=ArgParseSettings()
   required=false
 end
 
+if !isdir(outDir)
+  mkdir(outDir)
+end
+
 logmsg(msg)=string(now(), " ", msg)
 rows(df::DataFrame)=size(df, 1)
 readxl(file, sheet)=DataFrame(XLSX.readtable(file, sheet)...)
