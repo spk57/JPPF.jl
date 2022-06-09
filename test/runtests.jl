@@ -1,5 +1,5 @@
 using JPPF
-using Test, HTTP, JSON
+using Test, HTTP, JSON3
 #Assumes the server is started first
 
 url="http://localhost:8000/track"
