@@ -1,7 +1,5 @@
 using Genie, Genie.Router, Genie.Renderer.Json, Genie.Requests
 
-
-conn=RedisConnection()
 route("/") do
   serve_static_file("welcome.html")
 end
