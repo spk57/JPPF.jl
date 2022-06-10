@@ -1,5 +1,7 @@
 using Genie, Genie.Router, Genie.Renderer.Json, Genie.Requests
+using Logging, JSON3
 
+const trackFile="trackfile.json"
 route("/") do
   serve_static_file("welcome.html")
 end
@@ -8,9 +10,15 @@ route("/track", method = POST) do
   parseTracking(postpayload())   
 end
 
-function parseTracking(payload)
-#  println("Payload: $payload")
-#  println("Labels: $(payload[:JSON_PAYLOAD])")
+"Save and merge with existing tracking information"
+function saveTracking(payload, trackFile=trackFile)
   labels=payload[:JSON_PAYLOAD]["labels"]
-  println("Labels: $(labels) ")
+  @info("Labels: $(labels) ")
+  old=readTracking(trackFile)
+  oldList
+end
+
+function readTracking(trackFile=trackFile)
+  open(f->read(f, String), trackFile)
+  trackFile
 end
