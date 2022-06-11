@@ -1,5 +1,5 @@
 #UjulipdateValues.jl
-using DataFrames,Dates, Formatting, XLSX, MarketData, JSON3
+using DataFrames,Dates, Formatting, XLSX, MarketData, JSON3, Logging
 
 firstDate=DateTime(2021,1,1)
 "Calculate the previous business day (M-F"
@@ -21,7 +21,7 @@ function getHLOC(ticker, first, last=nothing)
   try 
     df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=lastDate(last))))
   catch
-    display("Unable to find ticker $ticker for $(string(startDate))")
+    @info("Unable to find ticker $ticker for $(string(first))")
     return missing
   end
   rows=size(df, 1)
@@ -31,14 +31,28 @@ function getHLOC(ticker, first, last=nothing)
 end
 
 "Read the history file and update or create if it does not exist"
-function updateHistory(ticker, path, first=firstDate, last=nothing)
+function updateHistory(ticker, path, first=firstDate, lastDate=nothing)
   tickerFileName=joinpath(path, ticker*".xlsx")
-  println("Writing $ticker to $tickerFileName")
-  tickerFile = if isfile(tickerFileName)
-    throw(ErrorException("Unimplemented to update history file"))
+  @info("Writing $ticker to $tickerFileName")
+  if isfile(tickerFileName)
+    tickerSheet=DataFrame(XLSX.readtable(tickerFileName, ticker)...)
+    lastEntry=last(sort(tickerSheet, :timestamp), 1)
+    lastDateinSet=lastEntry[1,:timestamp]
+    @info "Found last date $lastDate"
+    hloc=getHLOC(ticker, lastDateinSet+Dates.Day(1), lastDate)
+    if ismissing(hloc) 
+      return missing
+    end
+    updated=vcat(tickerSheet, hloc)
+    #TODO Overwrite all cells.  updated to only append new values
+    XLSX.writetable(tickerFileName, updated, overwrite=true, sheetname=ticker, anchor_cell="A1")
+    return hloc
   else
-    hloc=getHLOC(ticker, first, last)
+    @info "Getting HLOC for $ticker from $first to $lastDate"
+    hloc=getHLOC(ticker, first, lastDate)
+    println("HLOC: $hloc")
     XLSX.writetable(tickerFileName, hloc, overwrite=true, sheetname=ticker, anchor_cell="A1")
+    return hloc
   end
 end
 
@@ -52,8 +66,9 @@ end
 
 function getTickers(path)
   open(path, "r") do io
-    JSON.parse(io)
+    tickers = JSON.parse(io)
   end
+  tickers
 end
 
 function main(ARGS)
@@ -67,8 +82,10 @@ function main(ARGS)
   map(t -> updateHistory(t, outputPath), tickers)
 end
 
-main(ARGS)
+#main(ARGS)
 #date=DateTime(2021,8,20)
 #df=DataFrame(yahoo("MRNA", YahooOpt(period1=date)))
 #getHLOC("MRNA", date)
-#updateHistory("MRNA", "test")
+tickers=["MRNA", "JPM", "AMD", "TM", "INTC"]
+updateHistory("MRNA", "test")
+map(x-> updateHistory(x, "test"), tickers)
