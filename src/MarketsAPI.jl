@@ -15,10 +15,11 @@ function saveTracking(payload, trackFile=trackFile)
   labels=payload[:JSON_PAYLOAD]["labels"]
   @info("Labels: $(labels) ")
   old=readTracking(trackFile)
-  oldList
 end
 
+const labels="labels"
 function readTracking(trackFile=trackFile)
   open(f->read(f, String), trackFile)
-  trackFile
+  oldList=old[labels]
 end
+
