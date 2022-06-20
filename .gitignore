@@ -25,3 +25,4 @@ Manifest.toml
 output
 *.xlsx
 .vscode
+src/.ipynb_checkpoints/
