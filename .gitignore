@@ -26,3 +26,4 @@ output
 *.xlsx
 .vscode
 src/.ipynb_checkpoints/
+data
