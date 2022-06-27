@@ -88,4 +88,4 @@ end
 #getHLOC("MRNA", date)
 updateHistory("MRNA", "test")
 tickers=["MRNA", "JPM", "AMD", "TM", "INTC"]
-map(x-> updateHistory(x, "test"), tickers)
+map(x-> updateHistory(x, "data"), tickers)
