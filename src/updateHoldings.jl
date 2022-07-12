@@ -8,7 +8,11 @@ holdings=Vector{Holding}()
 "Bring forward the value of a holding from the previous date"
 replicateHolding(h, date)=Holding(date, h.stock, h.count)
 
+"Filter out Zero value holdings"
+filterZero(holdings, date)=filter(h -> !isapprox(h.count,  0.0) && h.date == date, holdings)
+
 "Bring forward the value of all holdings from the previous date"
+#replicateHoldings(holdings, date)=map(h-> replicateHolding(h, date), filterZero(holdings, date))
 replicateHoldings(holdings, date)=map(h-> replicateHolding(h, date), holdings)
 
 "Find a holding in a list of holdings"
@@ -33,28 +37,28 @@ function fillOutHoldings!(holdings, holdingsChanges, fromDate::Date, toDate::Dat
   dateRange=startDate:Day(1):toDate
   for day in dateRange
     #Find all holdings from yesterday 
-    previousHoldings = filter(x -> x.date == day-Day(1), holdings)
-    
+    yesterdayHoldings = filter(x -> x.date == day-Day(1) && x.count > 0.0, holdings)
+    #TODO Filter out zero value holdings from yesterday 
     #Replicate holdings from yesterday to today 
-    todayHoldings=replicateHoldings(previousHoldings, day)
+    todayHoldings=replicateHoldings(yesterdayHoldings, day)
 
     #Find changes from today
-    todayChanges = filter(x -> x.date == day, holdingsChanges)#Changes today 
+    todayChanges = filter(x -> x.date == day, holdingsChanges)
 
     #Get the changes to exising holdings
     #TODO figure out why intersect does not work here
-    existingChanges=filter(h -> h in todayChanges, todayHoldings) #Set of existing holdings with changes today   
+    holdingsToUpdate=filter(h -> h in todayChanges, todayHoldings) #Set of existing holdings with changes today   
+    #Update holdings for changes today
+    changedHoldings=map(h -> updateHolding!(h, todayChanges), holdingsToUpdate)
 
-    #Get the new changes (New Holdings)
-    newChanges=filter(c -> !(c in todayHoldings), todayChanges) #Set of new holdings with changes today
+    #Get the New Holdings
+    newHoldings=filter(c -> !(c in todayHoldings), todayChanges) #Set of new holdings with changes today
 
     #Get todays holdings which did not change
-    todayNotChanged=filter(h -> h in todayChanges, todayChanges)
-
-    #Update holdings for changes today
-    todayPlusExisting=map(h -> updateHolding!(h, todayChanges), existingChanges)
-    
-    holdings=vcat(holdings, newChanges, todayPlusExisting, todayNotChanged)
+    changedAndNew=vcat(changedHoldings, newHoldings)
+    unchangedHoldings=filter(h -> !(h in changedAndNew), todayHoldings) 
+   
+    holdings=vcat(holdings, unchangedHoldings, changedAndNew)
   end
   holdings
 end
