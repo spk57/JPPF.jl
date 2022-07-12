@@ -1,6 +1,6 @@
 # Common.jl
 using Dates
-import Base.<, Base.==
+import Base.<, Base.==, Base.show, Base.string
 
 abstract type Asset end
 
@@ -26,17 +26,23 @@ struct Stock
   name::String
 end
 
+Base.string(s::Stock)=s.symbol*":"*s.name
+Base.show(io::IO, s::Stock)=show(io, string(s))
+
 struct Value
   stock::Stock
   value::Float64 
   dateValued::Date
 end
 
-struct Holding
+mutable struct Holding
   date::Date
   stock::Stock
   count::Float16
 end
+
+Base.string(h::Holding)=string(h.date)*":"*string(h.stock)*":"*string(h.count)
+Base.show(io::IO, h::Holding)=show(io,string(h))
 
 <(h1::Holding, h2::Holding)=isless(h1,h2)
 Base.isless(h1::Holding, h2::Holding)=h1.date < h2.date

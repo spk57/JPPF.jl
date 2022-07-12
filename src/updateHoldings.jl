@@ -17,7 +17,8 @@ findHolding(holdings, symbol)=findnext(h -> h.stock.symbol == symbol, holdings,1
 "Update a holding"
 function updateHolding!(h, changes) 
   thisChange=findHolding(changes, h.stock.symbol)
-  h.stock.count+=thisChange.stock.count
+  h.count+=changes[thisChange].count
+  h
 end
 
 """Updates holdings to totals by day
@@ -31,13 +32,28 @@ function fillOutHoldings!(holdings, holdingsChanges, fromDate::Date, toDate::Dat
   startDate=fromDate+Day(1)
   dateRange=startDate:Day(1):toDate
   for day in dateRange
+    #Find all holdings from yesterday 
     previousHoldings = filter(x -> x.date == day-Day(1), holdings)
+    
+    #Replicate holdings from yesterday to today 
     todayHoldings=replicateHoldings(previousHoldings, day)
+
+    #Find changes from today
     todayChanges = filter(x -> x.date == day, holdingsChanges)#Changes today 
-    existingChanges=∩(todayChanges, todayHoldings) #Set of existing holdings with changes today
-    newChanges=setdiff(todayChanges, todayHoldings) #Set of new holdings with changes today
-    todayNotChanged=setdiff(todayHoldings, todayChanges)
-    todayPlusExisting=map(h -> updateHoldings(h, todayChanges), existingChanges)
+
+    #Get the changes to exising holdings
+    #TODO figure out why intersect does not work here
+    existingChanges=filter(h -> h in todayChanges, todayHoldings) #Set of existing holdings with changes today   
+
+    #Get the new changes (New Holdings)
+    newChanges=filter(c -> !(c in todayHoldings), todayChanges) #Set of new holdings with changes today
+
+    #Get todays holdings which did not change
+    todayNotChanged=filter(h -> h in todayChanges, todayChanges)
+
+    #Update holdings for changes today
+    todayPlusExisting=map(h -> updateHolding!(h, todayChanges), existingChanges)
+    
     holdings=vcat(holdings, newChanges, todayPlusExisting, todayNotChanged)
   end
   holdings
@@ -55,4 +71,5 @@ push!(holdingsChanges, Holding(today()-Day(3), INTC, 30))
 push!(holdingsChanges, Holding(today()-Day(2), AMD, 40))
 push!(holdingsChanges, Holding(today()-Day(1), AMD,  50))
 push!(holdingsChanges, Holding(today()-Day(1), JPM, -20))
-fillOutHoldings!(holdings, holdingsChanges, today()-Day(5))
+fHoldings=fillOutHoldings!(holdings, holdingsChanges, today()-Day(5))
+show(stdout, MIME("text/csv"), DataFrame(fHoldings))
