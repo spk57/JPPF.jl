@@ -32,16 +32,21 @@ Base.show(io::IO, s::Stock)=show(io, string(s))
 struct Value
   stock::Stock
   value::Float64 
-  dateValued::Date
+  date::Date
 end
+const sep=":"
+Base.string(v::Value)=ismissing(v) ?  missing : string(v.stock.symbol, sep,v.value, sep, v.date)
+Base.show(io::IO, v::Value)=show(io, string(v))
 
-mutable struct Holding
+Base.@kwdef mutable struct Holding
   date::Date
   stock::Stock
   count::Float16
+  value::Union{Missing, Value} = missing
 end
+Holding(date, stock, count)=Holding(date, stock, count, missing)
 
-Base.string(h::Holding)=string(h.date)*":"*string(h.stock)*":"*string(h.count)
+Base.string(h::Holding)=string(h.date,sep, h.stock, sep, h.count, sep, h.value)
 Base.show(io::IO, h::Holding)=show(io,string(h))
 
 <(h1::Holding, h2::Holding)=isless(h1,h2)
