@@ -1,5 +1,5 @@
 #Update Holdings.jl
-using DataFrames, Dates
+using DataFrames, Dates, XLSX
 include("Common.jl")
 
 const holdingsChanges=Vector{Holding}()
@@ -59,3 +59,7 @@ function fillOutHoldings!(holdings, holdingsChanges, fromDate::Date, toDate::Dat
   holdings
 end
 
+"Read holdings from a data Frame"
+function loadHoldings(df, dateCol=:Date, invCol=:Investment, amtCol=:Amount, Col=sharesCol=:Shares)
+  map(r -> Holding(r.DateCol, r.invCol, r.amtCol / r.sharesCol, r.sharesCol))   
+end

@@ -31,3 +31,4 @@ trackJSON="""{"labels":["INT", "JPM", "IBM"]}"""
   todayChanges = filter(x -> x.date == today(), fHoldings)
   @test length(todayChanges) == 2
 end
+

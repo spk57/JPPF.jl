@@ -21,35 +21,46 @@ describe(e::House) = "Owned Home"
 describe(e::Bond) = "Fixed income investment loaned to an entity"
 describe(e::Equity) = "Shares in a company"
 
-struct Stock 
-  symbol::String
-  name::String
-end
-
-Base.string(s::Stock)=s.symbol*":"*s.name
-Base.show(io::IO, s::Stock)=show(io, string(s))
-
-struct Value
-  stock::Stock
-  value::Float64 
-  date::Date
-end
 const sep=":"
-Base.string(v::Value)=ismissing(v) ?  missing : string(v.stock.symbol, sep,v.value, sep, v.date)
-Base.show(io::IO, v::Value)=show(io, string(v))
 
 Base.@kwdef mutable struct Holding
   date::Date
-  stock::Stock
+  name::Symbol
   count::Float16
-  value::Union{Missing, Value} = missing
+  value::Union{Missing, Holding}
 end
-Holding(date, stock, count)=Holding(date, stock, count, missing)
-
-Base.string(h::Holding)=string(h.date,sep, h.stock, sep, h.count, sep, h.value)
+Holding(date::Date, name::Symbol, count::Float16)=Holding(date, name, count, missing)
+  
+Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
 Base.show(io::IO, h::Holding)=show(io,string(h))
 
 <(h1::Holding, h2::Holding)=isless(h1,h2)
 Base.isless(h1::Holding, h2::Holding)=h1.date < h2.date
-==(h1::Holding, h2::Holding)=h1.stock.symbol==h2.stock.symbol
-Base.isequal(h1::Holding, h2::Holding)=isequal(h1.stock.symbol, h2.stock.symbol)
+==(h1::Holding, h2::Holding)=h1.name.symbol==h2.name.symbol
+Base.isequal(h1::Holding, h2::Holding)=isequal(h1.name.symbol, h2.name.symbol)
+
+dateTickerKey(date, ticker)=string(date, ticker)
+
+function readMarket(marketFile)
+  mdf=DataFrame(XLSX.readtable(marketFile, 1));
+  mdf.Close=convert(Vector{Float64}, mdf.Close);    
+  mdf
+end
+
+stripXLSX(s)=split(s, ".")[1]
+
+function readMarkets(marketDir)
+  marketFiles=readdir(marketDir)    
+  marketPaths=map(x -> joinpath(marketDir, x), marketFiles)
+  markets = map(readMarket, marketPaths) 
+  marketArr = map(readMarket,  marketPaths)
+  markets=reduce(vcat, marketArr)
+  marketNames=map(stripXLSX, marketFiles)
+  (markets, marketNames)
+end
+
+function readHoldings(holdingsFile, nameMap, first_row)
+  hdf=DataFrame(XLSX.readtable(holdingsFile, 1, first_row=first_row));
+  hdfs=select(hdf, nameMap...)
+  filter(h -> !ismissing(h.Quantity), (hdfs)
+end
