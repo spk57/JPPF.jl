@@ -27,10 +27,10 @@ Base.@kwdef mutable struct Holding
   date::Date
   name::Symbol
   count::Float16
-  value::Union{Missing, Holding}
+  value::Union{Missing, Float16}
 end
 Holding(date::Date, name::Symbol, count::Float16)=Holding(date, name, count, missing)
-  
+#Holding(t)=Holding(t.date, t.name, t.count, t.value)  
 Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
 Base.show(io::IO, h::Holding)=show(io,string(h))
 
@@ -59,8 +59,44 @@ function readMarkets(marketDir)
   (markets, marketNames)
 end
 
-function readHoldings(holdingsFile, nameMap, first_row)
+const mdy=DateFormat("mm/dd/yyyy")
+
+const nameMap=(1=>:Date, 4=>:Symbol, 7=>:Quantity, 8=>:Price)
+const nameMap2=(5=>:Date, 6=>:Symbol, 7=>:Quantity, 8=>:Price)
+"Read the holdings file and return a df with no missing values"
+function readHoldings(holdingsFile, first_row)
   hdf=DataFrame(XLSX.readtable(holdingsFile, 1, first_row=first_row));
   hdfs=select(hdf, nameMap...)
-  filter(h -> !ismissing(h.Quantity), (hdfs)
+  nomiss=filter(h -> !ismissing(h.Quantity), hdfs)
+  nomiss.d2.= Date.(lstrip.(nomiss.Date), mdy);  
+  nomiss.s2.=Symbol.(nomiss.Symbol)  
+  nomiss.q2.=convert.(Float16, nomiss.Quantity)
+  nomiss.v2.=convert.(Float16, nomiss.Price)
+  select(nomiss, nameMap2...)
+end
+
+"Load a holdings df into an array of Holdings"
+function loadHoldings(rh)
+  map(h -> Holding(h.Date, h.Symbol, h.Quantity, h.Price), copy.(eachrow(rh)))
+end
+
+ "Calculate the minumum closing value for each equity"
+function getMinClose(gmarkets)
+  closeHL=combine(gmarkets, :Close => minimum)
+  minClose=Dict{String, Float64}()
+  [minClose[closeHL[r, :Ticker]] = closeHL[r, :Close_minimum]  for r in 1:size(closeHL, 1)]
+  minClose
+end
+
+"Get the first and last date for the charts"
+function getDateRange(market)
+  #TODO get actual first and last, don't assume positions
+  first=market[1,:timestamp]
+  last=market[end,:timestamp]
+  dateRange=first : Day(1) : last
+end
+
+function plotTicker(markets, marketNames, pos)
+  dateRange=getDateRange(markets[pos])
+  lines!(days, markets[pos].Close, label=marketNames[pos])
 end
