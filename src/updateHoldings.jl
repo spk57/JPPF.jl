@@ -1,23 +1,23 @@
 #Update Holdings.jl
 using DataFrames, Dates, XLSX
 include("Common.jl")
-
+#TODO Merge this with Common.jl
 const holdingsChanges=Vector{Holding}()
 holdings=Vector{Holding}()
 
 "Bring forward the value of a holding from the previous date"
-replicateHolding(h, date)=Holding(date, h.stock, h.count)
+replicateHolding(h, date)=Holding(date, h.name, h.count)
 
 "Bring forward the value of all holdings from the previous date"
 #replicateHoldings(holdings, date)=map(h-> replicateHolding(h, date), filterZero(holdings, date))
 replicateHoldings(holdings, date)=map(h-> replicateHolding(h, date), holdings)
 
 "Find a holding in a list of holdings"
-findHolding(holdings, symbol)=findnext(h -> h.stock.symbol == symbol, holdings,1)
+findHolding(holdings, name)=findnext(h -> h.name == name, holdings,1)
 
 "Update a holding"
 function updateHolding!(h, changes) 
-  thisChange=findHolding(changes, h.stock.symbol)
+  thisChange=findHolding(changes, h.name)
   h.count+=changes[thisChange].count
   h
 end
@@ -55,6 +55,7 @@ function fillOutHoldings!(holdings, holdingsChanges, fromDate::Date, toDate::Dat
     unchangedHoldings=filter(h -> !(h in changedAndNew), todayHoldings) 
    
     holdings=vcat(holdings, unchangedHoldings, changedAndNew)
+    sort!(holdings, by=x-> x.date)
   end
   holdings
 end

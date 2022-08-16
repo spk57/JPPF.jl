@@ -1,5 +1,5 @@
 # Common.jl
-using Dates
+using Dates, DataFrames
 import Base.<, Base.==, Base.show, Base.string
 
 abstract type Asset end
@@ -22,6 +22,8 @@ describe(e::Bond) = "Fixed income investment loaned to an entity"
 describe(e::Equity) = "Shares in a company"
 
 const sep=":"
+"Convert a Struct to a DataFrame.  xs is an array of struct s"
+st2df(xs, s)=DataFrame(Dict(n=>[getfield(x, n) for x in xs] for n in fieldnames(s)))
 
 Base.@kwdef mutable struct Holding
   date::Date
@@ -29,21 +31,23 @@ Base.@kwdef mutable struct Holding
   count::Float16
   value::Union{Missing, Float16}
 end
-Holding(date::Date, name::Symbol, count::Float16)=Holding(date, name, count, missing)
+Holding(date::Date, name::Symbol, count)=Holding(date, name, count, missing)
 #Holding(t)=Holding(t.date, t.name, t.count, t.value)  
 Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
 Base.show(io::IO, h::Holding)=show(io,string(h))
 
 <(h1::Holding, h2::Holding)=isless(h1,h2)
 Base.isless(h1::Holding, h2::Holding)=h1.date < h2.date
-==(h1::Holding, h2::Holding)=h1.name.symbol==h2.name.symbol
-Base.isequal(h1::Holding, h2::Holding)=isequal(h1.name.symbol, h2.name.symbol)
+==(h1::Holding, h2::Holding)=h1.name==h2.name
+Base.isequal(h1::Holding, h2::Holding)=isequal(h1.name, h2.name)
 
 dateTickerKey(date, ticker)=string(date, ticker)
 
 function readMarket(marketFile)
   mdf=DataFrame(XLSX.readtable(marketFile, 1));
-  mdf.Close=convert(Vector{Float64}, mdf.Close);    
+  mdf.close=convert(Vector{Float64}, mdf.Close);  
+  mdf.date=convert(Vector{Date}, mdf.timestamp)
+  mdf.name.=Symbol.(mdf.Ticker)
   mdf
 end
 
@@ -55,6 +59,7 @@ function readMarkets(marketDir)
   markets = map(readMarket, marketPaths) 
   marketArr = map(readMarket,  marketPaths)
   markets=reduce(vcat, marketArr)
+  markets=select(markets, Between(:close, :name))
   marketNames=map(stripXLSX, marketFiles)
   (markets, marketNames)
 end
@@ -69,7 +74,7 @@ function readHoldings(holdingsFile, first_row)
   hdfs=select(hdf, nameMap...)
   nomiss=filter(h -> !ismissing(h.Quantity), hdfs)
   nomiss.d2.= Date.(lstrip.(nomiss.Date), mdy);  
-  nomiss.s2.=Symbol.(nomiss.Symbol)  
+  nomiss.s2.=Symbol.(strip.(nomiss.Symbol))  
   nomiss.q2.=convert.(Float16, nomiss.Quantity)
   nomiss.v2.=convert.(Float16, nomiss.Price)
   select(nomiss, nameMap2...)

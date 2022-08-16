@@ -86,6 +86,6 @@ end
 #date=DateTime(2021,8,20)
 #df=DataFrame(yahoo("MRNA", YahooOpt(period1=date)))
 #getHLOC("MRNA", date)
-updateHistory("MRNA", "test")
-tickers=["MRNA", "JPM", "AMD", "TM", "INTC"]
-map(x-> updateHistory(x, "data"), tickers)
+updateHistory("WY", "data")
+#tickers=["MRNA", "JPM", "AMD", "TM", "INTC"]
+#map(x-> updateHistory(x, "data"), tickers)
