@@ -1,2 +1,3 @@
 * Schedule daily updates for prices
 * Update holding from asset sales / purchases
+* Create Amazon lambda function to get daily updates
