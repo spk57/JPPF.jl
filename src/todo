@@ -1,3 +1,4 @@
 * Schedule daily updates for prices
+   * Figure out which api to use.   Python is easier than julia
 * Update holding from asset sales / purchases
 * Create Amazon lambda function to get daily updates
