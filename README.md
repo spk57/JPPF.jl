@@ -30,3 +30,6 @@ Technology usage: Julia, Excel, Jupyter
 5. open Retirement.ipynb
 6. Update the runFile variable to point to the analysis file
 7. Run the cells 
+### Update investment values
+1.  TODO Add investments to lookup list
+2.  TODO create a cron job to update list on a schedule
