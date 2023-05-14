@@ -1,0 +1,1 @@
+0 20 * * 1-5 ./bin/JPPF_daily.sh >> ./log/JPPF_daily.log
