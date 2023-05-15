@@ -1,10 +1,14 @@
 #!/bin/bash
-# http://localhost:49001/
-mkdir $HOME/jenkins_home
-chown 1000 $HOME/jenkins_home
-#docker run -d -p 49001:8080 -v $HOME:/var/jenkins_home/jenkins --name jenkins jenkins/jenkins:jdk11
+# http://localhost:8080/
 #This works
 #sudo docker run -d -v jenkins_home:/var/jenkins_home -p 8080:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk11
+export JULIA_HOME=/usr/local/etc/julia
+export DATA=$HOME/dev/projects/jppfdata
+export SRC=$HOME/dev/projects/JPPF.jl
+export DEPOT=$HOME/.julia
 sudo docker run -d -v jenkins_home:/var/jenkins_home \
-  --mount type=bind,source=/home/steve/dev/projects/JPPF.jl,target=/src \
+  --mount type=bind,source=$SRC,target=/src \
+  --mount type=bind,source=$JULIA_HOME,target=/julia \
+  --mount type=bind,source=$DATA,target=/data \
+  --mount type=bind,source=$DEPOT,target=/depot \
   -p 8080:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk11
