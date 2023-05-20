@@ -3,7 +3,7 @@
 #Note: Currently only gets from Yahoo
 #TODO Update ticker file for daily 
 
-using PersonalFinance, DataFrames,Dates, Formatting, XLSX, MarketData, JSON
+using DataFrames,Dates, Formatting, XLSX, MarketData, JSON
 
 firstDate=DateTime(2021,1,1)
 "Calculate the previous business day (M-F"
@@ -48,7 +48,7 @@ end
 
 function saveTickers(path, tickers)
   open(path, "w") do io
-    j = JSON.json(tickers)
+    j = JSON.read!(tickers)
     print(io, j)
   end
   j
@@ -56,7 +56,8 @@ end
 
 function getTickers(path)
   open(path, "r") do io
-    JSON.parse(io)
+    tracklist=JSON.parse(io)
+    tracklist["trackList"]
   end
 end
 
@@ -65,9 +66,11 @@ function main(ARGS)
   (tickersPath, outputPath) =if l == 2
     ARGS[1], ARGS[2]
   else
+    println("Args: $ARGS")
     throw(ArgumentError("Illegal number of arguments. Expected 2, found $l : julia UpdateValues.jl tickerPath outputPath"))
   end
   tickers=getTickers(tickersPath)
+  @info "Processing Tickers $tickers"
   map(t -> updateHistory(t, outputPath), tickers)
 end
 
