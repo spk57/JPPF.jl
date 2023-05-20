@@ -1,6 +1,7 @@
 #UjulipdateValues.jl
 #Get asset values 
 #Note: Currently only gets from Yahoo
+#TODO Update ticker file for daily 
 
 using PersonalFinance, DataFrames,Dates, Formatting, XLSX, MarketData, JSON
 
