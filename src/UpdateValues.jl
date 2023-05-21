@@ -35,15 +35,20 @@ function getHLOC(ticker, first, last=nothing)
 end
 
 "Read the history file and update or create if it does not exist"
-function updateHistory(ticker, path, first)
+function updateHistory(ticker, path, first, saveOld=true)
   @info "Writing $ticker"
   tickerFileName=joinpath(path, ticker*".xlsx")
+  hloc=getHLOC(ticker, first)
   tickerFile = if isfile(tickerFileName)
-    throw(ErrorException("Unimplemented to update history file"))
-  else
-    hloc=getHLOC(ticker, first)
-    XLSX.writetable(tickerFileName, hloc, overwrite=true, sheetname=ticker, anchor_cell="A1")
+    df=DataFrame(XLSX.readtable(tickerFileName, 1))
+    saveName=string(tickerFileName, "-", today(), ".save")
+    if saveOld 
+      @info "Saving old tickerFile $tickerFileName to $saveName"
+      mv(tickerFileName, saveName, force=true) 
+    end
+    hloc=vcat(df, hloc)
   end
+  XLSX.writetable(tickerFileName, hloc, overwrite=true, sheetname=ticker, anchor_cell="A1")
 end
 
 function saveTickers(path, tickers)
@@ -62,7 +67,7 @@ function getTickers(path)
 end
 
 function main(ARGS)
-  today=Dates.today()
+  today=DateTime(Dates.today())
   l=length(ARGS)
   (tickersPath, outputPath, days) =if l == 2
     ARGS[1], ARGS[2], :All
