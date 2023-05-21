@@ -25,7 +25,7 @@ function getHLOC(ticker, first, last=nothing)
   try 
     df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=lastDate(last))))
   catch
-    display("Unable to find ticker $ticker for $(string(startDate))")
+    display("Unable to find ticker $ticker for $first")
     return missing
   end
   rows=size(df, 1)
@@ -35,20 +35,20 @@ function getHLOC(ticker, first, last=nothing)
 end
 
 "Read the history file and update or create if it does not exist"
-function updateHistory(ticker, path, first=firstDate, last=nothing)
-  println("Writing $ticker")
+function updateHistory(ticker, path, first)
+  @info "Writing $ticker"
   tickerFileName=joinpath(path, ticker*".xlsx")
   tickerFile = if isfile(tickerFileName)
     throw(ErrorException("Unimplemented to update history file"))
   else
-    hloc=getHLOC(ticker, first, last)
+    hloc=getHLOC(ticker, first)
     XLSX.writetable(tickerFileName, hloc, overwrite=true, sheetname=ticker, anchor_cell="A1")
   end
 end
 
 function saveTickers(path, tickers)
   open(path, "w") do io
-    j = JSON.read!(tickers)
+    j = JSON.read(tickers)
     print(io, j)
   end
   j
@@ -62,16 +62,27 @@ function getTickers(path)
 end
 
 function main(ARGS)
+  today=Dates.today()
   l=length(ARGS)
-  (tickersPath, outputPath) =if l == 2
-    ARGS[1], ARGS[2]
+  (tickersPath, outputPath, days) =if l == 2
+    ARGS[1], ARGS[2], :All
   else
-    println("Args: $ARGS")
-    throw(ArgumentError("Illegal number of arguments. Expected 2, found $l : julia UpdateValues.jl tickerPath outputPath"))
+    (tickersPath,outputPath, days ) = if l==3
+      ARGS[1], ARGS[2], ARGS[3]
+    else
+      @error "Args: $ARGS"
+      throw(ArgumentError("Illegal number of arguments. Expected 2 or 3, found $l : syntax: julia UpdateValues.jl tickerPath outputPath [days]"))
+    end
   end
+  if lowercase(days) == "all"
+    first=firstDate
+  else
+    first=today-Dates.Day(parse(Int, days))
+  end
+  @info "First date = $first"
   tickers=getTickers(tickersPath)
   @info "Processing Tickers $tickers"
-  map(t -> updateHistory(t, outputPath), tickers)
+  map(t -> updateHistory(t, outputPath, first), tickers)
 end
 
 main(ARGS)
