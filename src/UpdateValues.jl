@@ -1,7 +1,6 @@
 #UjulipdateValues.jl
 #Get asset values 
 #Note: Currently only gets from Yahoo
-#TODO Update ticker file for daily 
 
 using DataFrames,Dates, Formatting, XLSX, MarketData, JSON
 
@@ -68,6 +67,7 @@ end
 
 function main(ARGS)
   today=DateTime(Dates.today())
+  @info "Started UpdateValues.jl @ $today"
   l=length(ARGS)
   (tickersPath, outputPath, days) =if l == 2
     ARGS[1], ARGS[2], :All
