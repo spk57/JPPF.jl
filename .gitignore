@@ -23,4 +23,7 @@ docs/site/
 # environment.
 Manifest.toml
 output
-.vscode/
+*.xlsx
+.vscode
+src/.ipynb_checkpoints/
+data
