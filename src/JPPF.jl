@@ -1,7 +1,7 @@
 "Julia Programmers Personal Finance"
 module JPPF
 using Pkg, Dates
-
+include("PersonalFinance.jl")
 const version=Pkg.project().version
 const today=Dates.today()
 const started=Dates.now()

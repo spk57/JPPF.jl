@@ -1,6 +1,5 @@
-"PersonalFinance.jl"
-module PersonalFinance
-using Base: _throw_argerror
+#PersonalFinance.jl
+
 using DataFrames: Dict
 using Markdown, DataFrames, Query, XLSX, Polynomials
 include("RetirementBudget.jl")
@@ -16,17 +15,17 @@ defaultXLS="../data/AssetListApril2021.xlsx"
 currentTab="CurrentAssets"
 
 "Read an excel tab into a dataframe"
-readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true)...)
+readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true))
 
 "read asset lists from excel file"
 function readAssetList(xls)
-  assetHistory = DataFrame(XLSX.readtable(xls, assetHistoryTab, infer_eltypes=true)...);
+  assetHistory = DataFrame(XLSX.readtable(xls, assetHistoryTab, infer_eltypes=true));
   assetHistory.Value=convert.(Float64, assetHistory.Amount);
   assetHistory.Savings=convert.(Float64, assetHistory.Savings);
   assetHistory.Growth=convert.(Float64, assetHistory.Growth);
   qtrTable=	XLSX.readtable(xls, qtrTab, infer_eltypes=true);
   quarters = DataFrame(qtrTable...);
-  currentAssets=DataFrame(XLSX.readtable(xls, currentTab, infer_eltypes=true)...);
+  currentAssets=DataFrame(XLSX.readtable(xls, currentTab, infer_eltypes=true));
   (assetHistory, quarters, currentAssets)
 end
 
@@ -118,6 +117,4 @@ function pareto(df, col, rows=10,rounding=true)
   top=sortedP[1:rows,:]
   other= sortedP[rows+1:end, :]
   (top, other)
-end
-
 end
