@@ -15,16 +15,18 @@ macro bind(def, element)
 end
 
 # ╔═╡ 8fe5ccde-1516-11ee-30c7-a1325d1714ac
-using DataFrames, Dates, XLSX, PlutoUI, HypertextLiteral
-
-# ╔═╡ eb9f9aba-1367-4f31-b263-851895142013
-md"Personal Investment Analysis Report Date: $(today())"
+using DataFrames, Dates, XLSX, PlutoUI, HypertextLiteral, Query, Polynomials
 
 # ╔═╡ 37416573-808b-4dc9-906c-21ad030c26c6
 begin
-	dataDisp = @bind dataDir TextField(default="../Data")
+	#Set up configurations 
+	include("PersonalFinance.jl")
+	dataDisp = @bind dataDir TextField(default="../data")
 	invDisp = @bind investmentFile TextField(default="Investments.xlsx")
 	trnDisp = @bind transactionFile TextField(default="Transactions.xlsx")
+	invPath=joinpath(dataDir,investmentFile)
+    transPath=joinpath(dataDir, transactionFile)
+	holdDisp=@bind holdingsString TextField(default="House, Pension")
 	@htl("""
 	<h1>Personal InvestmentAnalysis</h1>
 	Report Date $(today())
@@ -32,12 +34,32 @@ begin
 	<ul>
   	  <li>Data Directory:   $(dataDisp)</li>
 	  <li>Investment File:  $(invDisp)</li>
+	  <li>Investment FilePath:  $(invPath)</li>
 	  <li>Transaction File: $(trnDisp)</li>
+	  <li>Transaction FilePath:  $(transPath)</li>
+	  <li>Holdings (Comma separated list) $(holdDisp) </li>
 	</ul>
 	""")
 end
 
-# ╔═╡ 0a07de07-af28-45d2-a9bc-be2d790c7270
+# ╔═╡ eb9f9aba-1367-4f31-b263-851895142013
+md"Personal Investment Analysis Report Date: $(today())"
+
+# ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
+begin
+  #Read data 
+  inv=readTab(invPath, invTab);
+  assetList=select(inv, [:Code, :Type]); 
+  stockList=filter(:Type => t -> t == "Stock", assetList);
+  stockList=stockList[!, :Code]; #Strip off Type column
+  holdings=split(holdingsString, ",");
+  transactions=readTab(transPath, 1);
+  #Find bought and sold investments
+  sold=  filter(:Amount => t -> t>(0.0), transactions);
+  bought=filter(:Amount => t -> t<(0.0), transactions);
+end
+
+# ╔═╡ 5dc9be97-fc42-4ea1-b330-43efea862634
 
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -47,12 +69,16 @@ DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+Query = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
 DataFrames = "~1.5.0"
 HypertextLiteral = "~0.9.4"
 PlutoUI = "~0.7.51"
+Polynomials = "~3.2.13"
+Query = "~1.0.0"
 XLSX = "~0.9.0"
 """
 
@@ -62,7 +88,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "9ad2ff7b0e24c9c3c42677454ac634af234f4322"
+project_hash = "094602bac3b3596a17d220f50637136b47b51064"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -127,6 +153,12 @@ version = "0.18.13"
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
 uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
 version = "1.0.0"
+
+[[deps.DataValues]]
+deps = ["DataValueInterfaces", "Dates"]
+git-tree-sha1 = "d88a19299eba280a6d062e135a43f00323ae70bf"
+uuid = "e7dc6d0d-1eca-5fa6-8ad6-5aecde8b7ea5"
+version = "0.4.13"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -195,6 +227,12 @@ git-tree-sha1 = "0dc7b50b8d436461be01300fd8cd45aa0274b038"
 uuid = "41ab1584-1d38-5bbf-9106-f11c6c58b48f"
 version = "1.3.0"
 
+[[deps.IterableTables]]
+deps = ["DataValues", "IteratorInterfaceExtensions", "Requires", "TableTraits", "TableTraitsUtils"]
+git-tree-sha1 = "70300b876b2cebde43ebc0df42bc8c94a144e1b4"
+uuid = "1c8ee90f-4401-5389-894e-7a04a3dc0f4d"
+version = "1.0.0"
+
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
@@ -257,6 +295,12 @@ git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
 uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
 version = "0.1.4"
 
+[[deps.MacroTools]]
+deps = ["Markdown", "Random"]
+git-tree-sha1 = "42324d08725e200c23d4dfb549e0d5d89dede2d2"
+uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+version = "0.5.10"
+
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -310,6 +354,22 @@ git-tree-sha1 = "b478a748be27bd2f2c73a7690da219d0844db305"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 version = "0.7.51"
 
+[[deps.Polynomials]]
+deps = ["LinearAlgebra", "RecipesBase"]
+git-tree-sha1 = "3aa2bb4982e575acd7583f01531f241af077b163"
+uuid = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+version = "3.2.13"
+
+    [deps.Polynomials.extensions]
+    PolynomialsChainRulesCoreExt = "ChainRulesCore"
+    PolynomialsMakieCoreExt = "MakieCore"
+    PolynomialsMutableArithmeticsExt = "MutableArithmetics"
+
+    [deps.Polynomials.weakdeps]
+    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+    MakieCore = "20f20a25-4f0e-4fdf-b5d1-57303727442b"
+    MutableArithmetics = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
+
 [[deps.PooledArrays]]
 deps = ["DataAPI", "Future"]
 git-tree-sha1 = "a6062fe4063cdafe78f4a0a81cfffb89721b30e7"
@@ -338,6 +398,18 @@ version = "2.2.4"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
+[[deps.Query]]
+deps = ["DataValues", "IterableTables", "MacroTools", "QueryOperators", "Statistics"]
+git-tree-sha1 = "a66aa7ca6f5c29f0e303ccef5c8bd55067df9bbe"
+uuid = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
+version = "1.0.0"
+
+[[deps.QueryOperators]]
+deps = ["DataStructures", "DataValues", "IteratorInterfaceExtensions", "TableShowUtils"]
+git-tree-sha1 = "911c64c204e7ecabfd1872eb93c49b4e7c701f02"
+uuid = "2aef5ad7-51ca-5a8f-8e88-e75cf067b44b"
+version = "0.9.3"
+
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -346,10 +418,22 @@ uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
+[[deps.RecipesBase]]
+deps = ["PrecompileTools"]
+git-tree-sha1 = "5c3d09cc4f31f5fc6af001c250bf1278733100ff"
+uuid = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+version = "1.3.4"
+
 [[deps.Reexport]]
 git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
 uuid = "189a3867-3050-52da-a836-e630ba90ab69"
 version = "1.2.2"
+
+[[deps.Requires]]
+deps = ["UUIDs"]
+git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
+uuid = "ae029012-a4dd-5104-9daa-d747884805df"
+version = "1.3.0"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -403,11 +487,23 @@ deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.3"
 
+[[deps.TableShowUtils]]
+deps = ["DataValues", "Dates", "JSON", "Markdown", "Test"]
+git-tree-sha1 = "14c54e1e96431fb87f0d2f5983f090f1b9d06457"
+uuid = "5e66a065-1f0a-5976-b372-e0b8c017ca10"
+version = "0.2.5"
+
 [[deps.TableTraits]]
 deps = ["IteratorInterfaceExtensions"]
 git-tree-sha1 = "c06b2f539df1c6efa794486abfb6ed2022561a39"
 uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 version = "1.0.1"
+
+[[deps.TableTraitsUtils]]
+deps = ["DataValues", "IteratorInterfaceExtensions", "Missings", "TableTraits"]
+git-tree-sha1 = "78fecfe140d7abb480b53a44f3f85b6aa373c293"
+uuid = "382cd787-c1b6-5bf2-a167-d5b971a19bda"
+version = "1.0.2"
 
 [[deps.Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits", "Test"]
@@ -482,8 +578,9 @@ version = "17.4.0+0"
 
 # ╔═╡ Cell order:
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
-# ╠═8fe5ccde-1516-11ee-30c7-a1325d1714ac
-# ╠═37416573-808b-4dc9-906c-21ad030c26c6
-# ╠═0a07de07-af28-45d2-a9bc-be2d790c7270
+# ╟─8fe5ccde-1516-11ee-30c7-a1325d1714ac
+# ╟─37416573-808b-4dc9-906c-21ad030c26c6
+# ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
+# ╠═5dc9be97-fc42-4ea1-b330-43efea862634
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

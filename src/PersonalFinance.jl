@@ -2,7 +2,7 @@
 
 using DataFrames: Dict
 using Markdown, DataFrames, Query, XLSX, Polynomials
-include("RetirementBudget.jl")
+#include("RetirementBudget.jl")
 
 export readAssetList, qtrAssetTotals, roundThousands, sumNetAssets, sumAssets, fitAssets, 
   fitPoints, monthlyGrowth, ht, getCurrentAssets, readTab, pareto
@@ -13,6 +13,7 @@ assetHistoryTab="AssetHistory";
 qtrTab="Qtrs"; 
 defaultXLS="../data/AssetListApril2021.xlsx"
 currentTab="CurrentAssets"
+invTab="Investments"
 
 "Read an excel tab into a dataframe"
 readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true))
