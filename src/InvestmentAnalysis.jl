@@ -17,33 +17,50 @@ end
 # ╔═╡ 8fe5ccde-1516-11ee-30c7-a1325d1714ac
 using DataFrames, Dates, XLSX, PlutoUI, HypertextLiteral, Query, Polynomials
 
+# ╔═╡ eb9f9aba-1367-4f31-b263-851895142013
+	include("PersonalFinance.jl");
+
 # ╔═╡ 37416573-808b-4dc9-906c-21ad030c26c6
 begin
 	#Set up configurations 
-	include("PersonalFinance.jl")
 	dataDisp = @bind dataDir TextField(default="../data")
 	invDisp = @bind investmentFile TextField(default="Investments.xlsx")
 	trnDisp = @bind transactionFile TextField(default="Transactions.xlsx")
-	invPath=joinpath(dataDir,investmentFile)
-    transPath=joinpath(dataDir, transactionFile)
-	holdDisp=@bind holdingsString TextField(default="House, Pension")
-	@htl("""
-	<h1>Personal InvestmentAnalysis</h1>
+	holdDisp=@bind holdingsString TextField(default="House, Pension");
+	@htl("""<h1>Personal InvestmentAnalysis</h1>
 	Report Date $(today())
+    """)
+end
+
+# ╔═╡ 4b2fce2e-423c-4329-83e9-8d4abbbf34f8
+begin
+	@htl("""
 	<h4>Input Data</h4>
 	<ul>
   	  <li>Data Directory:   $(dataDisp)</li>
 	  <li>Investment File:  $(invDisp)</li>
-	  <li>Investment FilePath:  $(invPath)</li>
 	  <li>Transaction File: $(trnDisp)</li>
-	  <li>Transaction FilePath:  $(transPath)</li>
 	  <li>Holdings (Comma separated list) $(holdDisp) </li>
 	</ul>
 	""")
 end
 
-# ╔═╡ eb9f9aba-1367-4f31-b263-851895142013
-md"Personal Investment Analysis Report Date: $(today())"
+# ╔═╡ 56b90480-c5e8-4fc0-a539-af151894fbd1
+begin
+  invPath=joinpath(dataDir,investmentFile)
+  transPath=joinpath(dataDir, transactionFile)
+
+  @htl("""
+	<h4>File Paths:</h4>
+	<ul>
+	  <li>Investment FilePath:  $(invPath)</li>
+	  <li>Transaction FilePath:  $(transPath)</li>
+	</ul>
+  """)
+end
+
+# ╔═╡ 9d537ee4-da40-49e9-b10a-66ed1a29012f
+pwd()
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
@@ -86,7 +103,7 @@ XLSX = "~0.9.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.9.1"
+julia_version = "1.9.2"
 manifest_format = "2.0"
 project_hash = "094602bac3b3596a17d220f50637136b47b51064"
 
@@ -125,7 +142,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.0.2+0"
+version = "1.0.5+0"
 
 [[deps.Crayons]]
 git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
@@ -346,7 +363,7 @@ version = "2.7.1"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.9.0"
+version = "1.9.2"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
@@ -580,7 +597,10 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─8fe5ccde-1516-11ee-30c7-a1325d1714ac
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
-# ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
+# ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
+# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╠═9d537ee4-da40-49e9-b10a-66ed1a29012f
+# ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╠═5dc9be97-fc42-4ea1-b330-43efea862634
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
