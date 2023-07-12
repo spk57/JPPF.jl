@@ -1,7 +1,0 @@
-{"Files" :{
-    "dataDirectory" : "../Data", 
-    "investmentFile" : "Investments.xlsx",
-    "transactionFile" : "transactions.xlsx", 
-    "Holdings" : "House, Pension"
-}
-}

@@ -14,21 +14,19 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 8fe5ccde-1516-11ee-30c7-a1325d1714ac
-using DataFrames, Dates, XLSX, PlutoUI, HypertextLiteral, Query, Polynomials
-
 # ╔═╡ eb9f9aba-1367-4f31-b263-851895142013
-	include("PersonalFinance.jl");
+	begin
+	  include("PersonalFinance.jl");
+	  using DataFrames, Dates, XLSX, PlutoUI, HypertextLiteral, Query, Polynomials, JSON
+	end
 
 # ╔═╡ 37416573-808b-4dc9-906c-21ad030c26c6
 begin
 	#Set up configurations 
 	dataDisp = @bind dataDir TextField(default="../data")
-	invDisp = @bind investmentFile TextField(default="Investments.xlsx")
-	trnDisp = @bind transactionFile TextField(default="Transactions.xlsx")
-	holdDisp=@bind holdingsString TextField(default="House, Pension");
+	configDisp = @bind configFile TextField(default="config.json")
 	@htl("""<h1>Personal InvestmentAnalysis</h1>
-	Report Date $(today())
+	Report Date:  $(today())
     """)
 end
 
@@ -38,38 +36,45 @@ begin
 	<h4>Input Data</h4>
 	<ul>
   	  <li>Data Directory:   $(dataDisp)</li>
-	  <li>Investment File:  $(invDisp)</li>
-	  <li>Transaction File: $(trnDisp)</li>
-	  <li>Holdings (Comma separated list) $(holdDisp) </li>
-	</ul>
+	  <li>Configuration File:  $(configDisp)</li>	</ul>
 	""")
 end
 
 # ╔═╡ 56b90480-c5e8-4fc0-a539-af151894fbd1
 begin
-  invPath=joinpath(dataDir,investmentFile)
-  transPath=joinpath(dataDir, transactionFile)
+  configPath=joinpath(dataDir, configFile)
+  configStr=read(configPath, String)
+  config=JSON.parse(configStr)["Config"]
+  
+  invPath=joinpath(config["dataDirectory"],config["investmentFile"])
+  transPath=joinpath(config["dataDirectory"], config["transactionFile"])
 
   @htl("""
 	<h4>File Paths:</h4>
 	<ul>
-	  <li>Investment FilePath:  $(invPath)</li>
-	  <li>Transaction FilePath:  $(transPath)</li>
+	  <li>Config FilePath:          $(configPath)</li>
+	  <li>Config Investment  Path:  $(invPath)</li>
+	  <li>Config Transaction Path:  $(transPath)</li>
 	</ul>
   """)
 end
 
-# ╔═╡ 9d537ee4-da40-49e9-b10a-66ed1a29012f
-pwd()
+# ╔═╡ b0697d48-6b2b-4a51-b028-2753f84d0820
+begin
+  configPath2=joinpath(dataDir, configFile)
+  configStr2=read(configPath2, String)
+  config2=JSON.parse(configStr2)
+  @htl("""$config2""")
+end
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
   #Read data 
-  inv=readTab(invPath, invTab);
+  inv=readTab(invPath, 1);
   assetList=select(inv, [:Code, :Type]); 
   stockList=filter(:Type => t -> t == "Stock", assetList);
   stockList=stockList[!, :Code]; #Strip off Type column
-  holdings=split(holdingsString, ",");
+  holdings=split(config["Holdings"], ",");
   transactions=readTab(transPath, 1);
   #Find bought and sold investments
   sold=  filter(:Amount => t -> t>(0.0), transactions);
@@ -85,14 +90,16 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 Query = "1a8c2f83-1ff3-5112-b086-8aa67b057ba1"
 XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"
 
 [compat]
-DataFrames = "~1.5.0"
+DataFrames = "~1.6.0"
 HypertextLiteral = "~0.9.4"
+JSON = "~0.21.4"
 PlutoUI = "~0.7.51"
 Polynomials = "~3.2.13"
 Query = "~1.0.0"
@@ -105,7 +112,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "094602bac3b3596a17d220f50637136b47b51064"
+project_hash = "1bbb0ca28bee17d0c22190446a26bbbd94d3bb33"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
@@ -155,16 +162,16 @@ uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.15.0"
 
 [[deps.DataFrames]]
-deps = ["Compat", "DataAPI", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SnoopPrecompile", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "aa51303df86f8626a962fccb878430cdb0a97eee"
+deps = ["Compat", "DataAPI", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "089d29c0fc00a190661517e4f3cba5dcb3fd0c08"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.5.0"
+version = "1.6.0"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "d1fff3a548102f48987a52a2e0d114fa97d730f0"
+git-tree-sha1 = "cf25ccb972fec4e4817764d01c82386ae94f77b4"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.18.13"
+version = "0.18.14"
 
 [[deps.DataValueInterfaces]]
 git-tree-sha1 = "bfc1187b79289637fa0ef6d4436ebdfe6905cbd6"
@@ -407,9 +414,9 @@ version = "1.4.0"
 
 [[deps.PrettyTables]]
 deps = ["Crayons", "Formatting", "LaTeXStrings", "Markdown", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "213579618ec1f42dea7dd637a42785a608b1ea9c"
+git-tree-sha1 = "331cc8048cba270591eab381e7aa3e2e3fef7f5e"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.4"
+version = "2.2.5"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -464,12 +471,6 @@ version = "1.4.0"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
-
-[[deps.SnoopPrecompile]]
-deps = ["Preferences"]
-git-tree-sha1 = "e760a70afdcd461cf01a575947738d359234665c"
-uuid = "66db9d55-30c0-4569-8b51-7e840670fc0c"
-version = "1.0.3"
 
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
@@ -594,12 +595,11 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─eb9f9aba-1367-4f31-b263-851895142013
-# ╟─8fe5ccde-1516-11ee-30c7-a1325d1714ac
+# ╠═eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
-# ╠═4b2fce2e-423c-4329-83e9-8d4abbbf34f8
+# ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
 # ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
-# ╠═9d537ee4-da40-49e9-b10a-66ed1a29012f
+# ╠═b0697d48-6b2b-4a51-b028-2753f84d0820
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╠═5dc9be97-fc42-4ea1-b330-43efea862634
 # ╟─00000000-0000-0000-0000-000000000001
