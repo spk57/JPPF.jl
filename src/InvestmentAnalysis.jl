@@ -57,31 +57,30 @@ begin
 	   <tr><td>Transaction Path:</td> <td> $(transPath)</td></tr>
 	</table>
   """)
+ 
+end
+
+# ╔═╡ b2622a50-ffbe-40cc-813b-08cf8167981d
+begin
+  transactionMap=config["transactionMap"]
+  @htl("$(transactionMap)")
 end
 
 # ╔═╡ 5ec601f9-2446-4140-83a1-2c51433cc17a
-begin
-  mapColumns(mapping, name)=Int(mapping[name]-Int('A'))+1
-  mapping=Dict([("Symbol", 'C'), ("Quantity", 'F'), ("Amount",'K')]);
-  cSym=mapColumns(mapping, "Symbol")
-  cQty=mapColumns(mapping, "Quantity")
-  cAm=mapColumns(mapping, "Amount")
-  md"Cols: Symbol: $(cSym) Quantity: $(cQty) Amount: $(cAm)"
-end
-
-# ╔═╡ b0697d48-6b2b-4a51-b028-2753f84d0820
-begin
-  configPath2=joinpath(dataDir, configFile)
-  configStr2=read(configPath2, String)
-  config2=JSON.parse(configStr2)
-  @htl("""$config2""")
+function remapColumns!(transactions, transactionMap)
+  symToCol(sym)=Int(sym)-Int('A')+1
+  for key in keys(transactionMap)  
+	sym=transactionMap[key][1]
+	col=symToCol(sym)
+    transactions=rename!(transactions, [col => key])
+  end
 end
 
 # ╔═╡ c02bc28b-0723-45ea-a7e5-ea17b49373e6
 begin
   stripMiss(s)=length(strip(s)) > 0 ? s : missing
-  xTrans=readTab(transPath, 1)
-  transactions=rename(xTrans, [cSym => :Symbol, cQty=> :Quantity, cAm => :Amount ])
+  transactions=readTab(transPath, 1)
+  remapColumns!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol])
   tickers=collect(skipmissing(map(stripMiss, tNames)))
   @htl("""Tickers: $(tickers)""")
@@ -618,9 +617,9 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
-# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
-# ╠═5ec601f9-2446-4140-83a1-2c51433cc17a
-# ╠═b0697d48-6b2b-4a51-b028-2753f84d0820
+# ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╟─b2622a50-ffbe-40cc-813b-08cf8167981d
+# ╟─5ec601f9-2446-4140-83a1-2c51433cc17a
 # ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╟─00000000-0000-0000-0000-000000000001
