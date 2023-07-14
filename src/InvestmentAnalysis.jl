@@ -50,13 +50,23 @@ begin
   transPath=joinpath(config["dataDirectory"], config["transactionFile"])
 
   @htl("""
-	<h4>File Paths:</h4>
-	<ul>
-	  <li>Config FilePath:          $(configPath)</li>
-	  <li>Config Investment  Path:  $(invPath)</li>
-	  <li>Config Transaction Path:  $(transPath)</li>
-	</ul>
+     <table style="float:left;width:80%">
+       <caption>Config File Paths</caption> 
+	   <tr><td>FilePath:</td>         <td>$(configPath)</td></tr>
+	   <tr><td>Investment  Path:</td> <td>$(invPath)</td></tr>
+	   <tr><td>Transaction Path:</td> <td> $(transPath)</td></tr>
+	</table>
   """)
+end
+
+# ╔═╡ 5ec601f9-2446-4140-83a1-2c51433cc17a
+begin
+  mapColumns(mapping, name)=Int(mapping[name]-Int('A'))+1
+  mapping=Dict([("Symbol", 'C'), ("Quantity", 'F'), ("Amount",'K')]);
+  cSym=mapColumns(mapping, "Symbol")
+  cQty=mapColumns(mapping, "Quantity")
+  cAm=mapColumns(mapping, "Amount")
+  md"Cols: Symbol: $(cSym) Quantity: $(cQty) Amount: $(cAm)"
 end
 
 # ╔═╡ b0697d48-6b2b-4a51-b028-2753f84d0820
@@ -67,22 +77,32 @@ begin
   @htl("""$config2""")
 end
 
+# ╔═╡ c02bc28b-0723-45ea-a7e5-ea17b49373e6
+begin
+  stripMiss(s)=length(strip(s)) > 0 ? s : missing
+  xTrans=readTab(transPath, 1)
+  transactions=rename(xTrans, [cSym => :Symbol, cQty=> :Quantity, cAm => :Amount ])
+  tNames=unique(transactions[!,:Symbol])
+  tickers=collect(skipmissing(map(stripMiss, tNames)))
+  @htl("""Tickers: $(tickers)""")
+end
+
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
   #Read data 
-  inv=readTab(invPath, 1);
-  assetList=select(inv, [:Code, :Type]); 
-  stockList=filter(:Type => t -> t == "Stock", assetList);
-  stockList=stockList[!, :Code]; #Strip off Type column
   holdings=split(config["Holdings"], ",");
-  transactions=readTab(transPath, 1);
+  @htl("""Holdings: $(holdings)""")
   #Find bought and sold investments
-  sold=  filter(:Amount => t -> t>(0.0), transactions);
-  bought=filter(:Amount => t -> t<(0.0), transactions);
+  sold=  filter(:Amount => a -> a>(0.0), transactions);
+  bought=filter(:Amount => a -> a<(0.0), transactions);
+  @htl("""
+       <table style="float:left;width:30%">
+       <caption>Transaction Summary</caption> 
+       <tr><td>Bought</td> <td>$(size(bought,1))</td></tr>
+       <tr><td>Sold</td>   <td>$(size(sold,1))</td></tr>
+       </table>
+  """)
 end
-
-# ╔═╡ 5dc9be97-fc42-4ea1-b330-43efea862634
-
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -595,12 +615,13 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═eb9f9aba-1367-4f31-b263-851895142013
+# ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
 # ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╠═5ec601f9-2446-4140-83a1-2c51433cc17a
 # ╠═b0697d48-6b2b-4a51-b028-2753f84d0820
+# ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
-# ╠═5dc9be97-fc42-4ea1-b330-43efea862634
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
