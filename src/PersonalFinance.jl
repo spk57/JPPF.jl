@@ -2,16 +2,9 @@
 
 using DataFrames: Dict
 using Markdown, DataFrames, Query, XLSX, Polynomials
-#include("RetirementBudget.jl")
-
-export readAssetList, qtrAssetTotals, roundThousands, sumNetAssets, sumAssets, fitAssets, 
-  fitPoints, monthlyGrowth, ht, getCurrentAssets, readTab, pareto
-
-export readRetirementBudget, getScenario, getScenarioElements, filterScenario
 
 assetHistoryTab="AssetHistory";
 qtrTab="Qtrs"; 
-defaultXLS="../data/AssetListApril2021.xlsx"
 currentTab="CurrentAssets"
 invTab="Investments"
 

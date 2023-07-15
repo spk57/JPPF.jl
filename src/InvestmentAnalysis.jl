@@ -45,19 +45,20 @@ begin
   configPath=joinpath(dataDir, configFile)
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
-  
-  invPath=joinpath(config["dataDirectory"],config["investmentFile"])
-  transPath=joinpath(config["dataDirectory"], config["transactionFile"])
-
+  transFiles=split(config["transactionFile"], ",")
+  transFiles=map(strip, transFiles)
+  invPath=joinpath(dataDir,config["investmentFile"])
+  transPaths=map(f -> joinpath(dataDir, f), transFiles)
+  tpStr(tp)="""<tr><td>Transaction Path:</td> <td> $(tp)</td></tr>""";
+  tpStrs=string(map(tpStr, transPaths));
   @htl("""
      <table style="float:left;width:80%">
        <caption>Config File Paths</caption> 
 	   <tr><td>FilePath:</td>         <td>$(configPath)</td></tr>
 	   <tr><td>Investment  Path:</td> <td>$(invPath)</td></tr>
-	   <tr><td>Transaction Path:</td> <td> $(transPath)</td></tr>
+       $(tpStrs)
 	</table>
   """)
- 
 end
 
 # ╔═╡ b2622a50-ffbe-40cc-813b-08cf8167981d
@@ -79,12 +80,16 @@ end
 # ╔═╡ c02bc28b-0723-45ea-a7e5-ea17b49373e6
 begin
   stripMiss(s)=length(strip(s)) > 0 ? s : missing
-  transactions=readTab(transPath, 1)
+  trs=map(tp -> readTab(tp, 1), transPaths)
+  transactions=reduce(vcat, trs,  cols=:union)
   remapColumns!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol])
   tickers=collect(skipmissing(map(stripMiss, tNames)))
   @htl("""Tickers: $(tickers)""")
 end
+
+# ╔═╡ d3305254-a212-4871-89d0-753b06141597
+typeof(transactions)
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
@@ -617,10 +622,11 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
-# ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
 # ╟─b2622a50-ffbe-40cc-813b-08cf8167981d
-# ╟─5ec601f9-2446-4140-83a1-2c51433cc17a
+# ╠═5ec601f9-2446-4140-83a1-2c51433cc17a
 # ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
+# ╠═d3305254-a212-4871-89d0-753b06141597
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
