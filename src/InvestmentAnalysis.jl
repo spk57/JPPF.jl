@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.26
+# v0.19.27
 
 using Markdown
 using InteractiveUtils
@@ -43,38 +43,34 @@ end
 # ╔═╡ 56b90480-c5e8-4fc0-a539-af151894fbd1
 begin
   configPath=joinpath(dataDir, configFile)
+  #todo add try catch here
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
   transFiles=split(config["transactionFile"], ",")
   transFiles=map(strip, transFiles)
   invPath=joinpath(dataDir,config["investmentFile"])
   transPaths=map(f -> joinpath(dataDir, f), transFiles)
-  tpStr(tp)="""<tr><td>Transaction Path:</td> <td> $(tp)</td></tr>""";
-  tpStrs=string(map(tpStr, transPaths));
+  renderRow(sym)=@htl("""<tr><td>$sym</td></tr>""")
+  transactionMap=config["transactionMap"]
+  tKey=collect(keys(transactionMap))
+  renderKV(k,v)=@htl("""<tr><td>$k</td><td>$v</td></tr>""")
+	
   @htl("""
      <table style="float:left;width:80%">
        <caption>Config File Paths</caption> 
 	   <tr><td>FilePath:</td>         <td>$(configPath)</td></tr>
 	   <tr><td>Investment  Path:</td> <td>$(invPath)</td></tr>
-       $(tpStrs)
+     </table>
+     <table style="float:left;width:60%">
+       <caption>Transaction Files</caption> 
+       $(map(renderRow, transPaths))
+	</table>
+     <table style="float:left;width:50%">
+       <caption>Transaction file mapping</caption> 
+       <th><td>Column</td></th>
+       $(map(k -> renderKV(k, transactionMap[k]), tKey))
 	</table>
   """)
-end
-
-# ╔═╡ b2622a50-ffbe-40cc-813b-08cf8167981d
-begin
-  transactionMap=config["transactionMap"]
-  @htl("$(transactionMap)")
-end
-
-# ╔═╡ 5ec601f9-2446-4140-83a1-2c51433cc17a
-function remapColumns!(transactions, transactionMap)
-  symToCol(sym)=Int(sym)-Int('A')+1
-  for key in keys(transactionMap)  
-	sym=transactionMap[key][1]
-	col=symToCol(sym)
-    transactions=rename!(transactions, [col => key])
-  end
 end
 
 # ╔═╡ c02bc28b-0723-45ea-a7e5-ea17b49373e6
@@ -84,12 +80,19 @@ begin
   transactions=reduce(vcat, trs,  cols=:union)
   remapColumns!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol])
-  tickers=collect(skipmissing(map(stripMiss, tNames)))
-  @htl("""Tickers: $(tickers)""")
+  syms=collect(skipmissing(map(stripMiss, tNames)))
+  syms=map(strip, syms)
+  stocks=filter(s -> !isnumeric(s[1]), syms)
+  cds=filter(s -> isnumeric(s[1]), syms)
+  @htl("""
+     <table style="float:left;width:40%">
+      <caption>Stocks</caption> 
+    $(map(renderRow, stocks))</table>
+     <table style="float:left;width:40%">
+      <caption>CD's</caption> 
+    $(map(renderRow, cds))</table>
+  """)
 end
-
-# ╔═╡ d3305254-a212-4871-89d0-753b06141597
-typeof(transactions)
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
@@ -97,14 +100,20 @@ begin
   holdings=split(config["Holdings"], ",");
   @htl("""Holdings: $(holdings)""")
   #Find bought and sold investments
+  bought=  filter(:Amount => a -> a<=(0.0), transactions);
   sold=  filter(:Amount => a -> a>(0.0), transactions);
-  bought=filter(:Amount => a -> a<(0.0), transactions);
+  boughtstocks=filter(:Symbol => s -> s in stocks, bought )
+  boughtcds=filter(:Symbol => s -> s ∉ stocks, bought )
+  soldstocks=filter(:Symbol => s -> s in stocks, sold )
+  soldcds=filter(:Symbol => s -> s ∉ stocks, sold )
+	
   @htl("""
-       <table style="float:left;width:30%">
-       <caption>Transaction Summary</caption> 
-       <tr><td>Bought</td> <td>$(size(bought,1))</td></tr>
-       <tr><td>Sold</td>   <td>$(size(sold,1))</td></tr>
-       </table>
+   <table style="float:left;width:30%">
+     <caption>Transaction Summary</caption> 
+     <th>                <td>Total</td><td>Stocks</td><td>CD's</td></th>
+     <tr><td>Bought</td><td>$(size(bought,1))</td><td>$(size(boughtstocks,1))</td><td>$(size(boughtcds,1))</td></tr>
+     <tr><td>Sold</td>   <td>$(size(sold,1))</td><td>$(size(soldstocks,1))</td></td><td>$(size(soldcds,1))</td></tr>
+   </table>
   """)
 end
 
@@ -622,11 +631,8 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
-# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
-# ╟─b2622a50-ffbe-40cc-813b-08cf8167981d
-# ╠═5ec601f9-2446-4140-83a1-2c51433cc17a
+# ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
 # ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
-# ╠═d3305254-a212-4871-89d0-753b06141597
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

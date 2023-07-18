@@ -11,6 +11,17 @@ invTab="Investments"
 "Read an excel tab into a dataframe"
 readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true))
 
+"Rename columns"
+function remapColumns!(transactions, transactionMap)
+  symToCol(sym)=Int(sym)-Int('A')+1
+  for key in keys(transactionMap)  
+	sym=transactionMap[key][1]
+	col=symToCol(sym)
+    transactions=rename!(transactions, [col => key])
+  end
+  transactions[!,:Symbol] = strip.(transactions[!,:Symbol])
+end
+
 "read asset lists from excel file"
 function readAssetList(xls)
   assetHistory = DataFrame(XLSX.readtable(xls, assetHistoryTab, infer_eltypes=true));
