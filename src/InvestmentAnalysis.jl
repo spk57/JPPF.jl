@@ -25,6 +25,8 @@ begin
 	#Set up configurations 
 	dataDisp = @bind dataDir TextField(default="../data")
 	configDisp = @bind configFile TextField(default="config.json")
+	displayConfig = @bind dConfig CheckBox()
+	displayData = @bind dData CheckBox()
 	@htl("""<h1>Personal InvestmentAnalysis</h1>
 	Report Date:  $(today())
     """)
@@ -36,26 +38,29 @@ begin
 	<h4>Input Data</h4>
 	<ul>
   	  <li>Data Directory:   $(dataDisp)</li>
-	  <li>Configuration File:  $(configDisp)</li>	</ul>
+	  <li>Configuration File:  $(configDisp)</li>
+	  <li>Display Configuration:  $(displayConfig)</li>
+	  <li>Display Data:  $(displayData)</li>
+	</ul>
 	""")
 end
 
 # ╔═╡ 56b90480-c5e8-4fc0-a539-af151894fbd1
 begin
   configPath=joinpath(dataDir, configFile)
-  #todo add try catch here
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
-  transFiles=split(config["transactionFile"], ",")
-  transFiles=map(strip, transFiles)
+  transFiles=map(strip, split(config["transactionFile"], ","))
   invPath=joinpath(dataDir,config["investmentFile"])
   transPaths=map(f -> joinpath(dataDir, f), transFiles)
   renderRow(sym)=@htl("""<tr><td>$sym</td></tr>""")
   transactionMap=config["transactionMap"]
-  tKey=collect(keys(transactionMap))
+  tKey=sort(collect(keys(transactionMap)))
+  configTRE=config["RegularExpressions"]
   renderKV(k,v)=@htl("""<tr><td>$k</td><td>$v</td></tr>""")
 	
-  @htl("""
+  if dConfig 
+	  @htl("""
      <table style="float:left;width:80%">
        <caption>Config File Paths</caption> 
 	   <tr><td>FilePath:</td>         <td>$(configPath)</td></tr>
@@ -70,7 +75,8 @@ begin
        <th><td>Column</td></th>
        $(map(k -> renderKV(k, transactionMap[k]), tKey))
 	</table>
-  """)
+    """)
+  end
 end
 
 # ╔═╡ c02bc28b-0723-45ea-a7e5-ea17b49373e6
@@ -79,19 +85,21 @@ begin
   trs=map(tp -> readTab(tp, 1), transPaths)
   transactions=reduce(vcat, trs,  cols=:union)
   remapColumns!(transactions, transactionMap)
-  tNames=unique(transactions[!,:Symbol])
+  tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
   syms=map(strip, syms)
-  stocks=filter(s -> !isnumeric(s[1]), syms)
-  cds=filter(s -> isnumeric(s[1]), syms)
-  @htl("""
-     <table style="float:left;width:40%">
+  stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  cds=sort(filter(s -> isnumeric(s[1]), syms))
+  if dData
+    @htl("""
+      <table style="float:left;width:40%">
       <caption>Stocks</caption> 
-    $(map(renderRow, stocks))</table>
-     <table style="float:left;width:40%">
+      $(map(renderRow, stocks))</table>
+       <table style="float:left;width:40%">
       <caption>CD's</caption> 
-    $(map(renderRow, cds))</table>
-  """)
+      $(map(renderRow, cds))</table>
+    """)
+  end
 end
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
@@ -100,6 +108,7 @@ begin
   holdings=split(config["Holdings"], ",");
   @htl("""Holdings: $(holdings)""")
   #Find bought and sold investments
+  divR=r"
   bought=  filter(:Amount => a -> a<=(0.0), transactions);
   sold=  filter(:Amount => a -> a>(0.0), transactions);
   boughtstocks=filter(:Symbol => s -> s in stocks, bought )
@@ -631,7 +640,7 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
-# ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
 # ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╟─00000000-0000-0000-0000-000000000001

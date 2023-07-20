@@ -1,0 +1,22 @@
+{"Config" :{
+    "investmentFile" : "Investments.xlsx",
+    "transactionFile" : "Transactions.xlsx", 
+    "transactionMap" : {
+      "Action"   : "B", 
+      "Symbol"   : "E", 
+      "Quantity" : "G", 
+      "Amount"   : "F" 
+    },
+    "Holdings" : "House, Pension", 
+    "RegularExpressions" : {
+      "Dividend" : "r\"r.*dividend.*\"i", 
+      "Interest" : "r\"r.*interest.*\"i", 
+      "Reinvestment" : "r\"r.*reinvest.*\"i", 
+      "Purchase" : "r\"r.*bought.*\"i", 
+      "Sale" : "r\"r.*sold.*\"i", 
+      "Transfer" : "r\"r.*transfer.*\"i", 
+      "ForeignTax" : "r\"r.*foreign.*\"i", 
+      "Merger" : "r\"r.*merger.*\"i"
+    }
+  }
+}
