@@ -90,8 +90,10 @@ begin
   syms=map(strip, syms)
   stocks=sort(filter(s -> !isnumeric(s[1]), syms))
   cds=sort(filter(s -> isnumeric(s[1]), syms))
+  holdings=split(config["Holdings"], ",")
   if dData
     @htl("""
+       Holdings: $(holdings)<p/>
       <table style="float:left;width:40%">
       <caption>Stocks</caption> 
       $(map(renderRow, stocks))</table>
@@ -104,24 +106,19 @@ end
 
 # ╔═╡ 88c60ff8-0028-445c-a534-fb6deb9f0c4d
 begin
-  #Read data 
-  holdings=split(config["Holdings"], ",");
-  @htl("""Holdings: $(holdings)""")
-  #Find bought and sold investments
-  divR=r"
-  bought=  filter(:Amount => a -> a<=(0.0), transactions);
-  sold=  filter(:Amount => a -> a>(0.0), transactions);
-  boughtstocks=filter(:Symbol => s -> s in stocks, bought )
-  boughtcds=filter(:Symbol => s -> s ∉ stocks, bought )
-  soldstocks=filter(:Symbol => s -> s in stocks, sold )
-  soldcds=filter(:Symbol => s -> s ∉ stocks, sold )
+  isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
+  isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
+  isANY(t)=true
+  filt(s,is)=filter([:Action, :Symbol] => (a,sym) ->     	occursin(Regex(configTRE[s],"i"), a) && is(sym) , transactions);
+  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isStock),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
+  dispTot(t)=@htl("<tr><td>$(t[1])</td><td>$(t[2])</td><td>$(t[3])</td><td>$(t[4])</td></tr>")
+  dispTots(ts)=map(dispTot, ts)
 	
   @htl("""
    <table style="float:left;width:30%">
      <caption>Transaction Summary</caption> 
      <th>                <td>Total</td><td>Stocks</td><td>CD's</td></th>
-     <tr><td>Bought</td><td>$(size(bought,1))</td><td>$(size(boughtstocks,1))</td><td>$(size(boughtcds,1))</td></tr>
-     <tr><td>Sold</td>   <td>$(size(sold,1))</td><td>$(size(soldstocks,1))</td></td><td>$(size(soldcds,1))</td></tr>
+     $(dispTots(tots))
    </table>
   """)
 end
@@ -640,8 +637,8 @@ version = "17.4.0+0"
 # ╟─eb9f9aba-1367-4f31-b263-851895142013
 # ╟─37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
-# ╠═56b90480-c5e8-4fc0-a539-af151894fbd1
-# ╠═c02bc28b-0723-45ea-a7e5-ea17b49373e6
-# ╠═88c60ff8-0028-445c-a534-fb6deb9f0c4d
+# ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
+# ╟─c02bc28b-0723-45ea-a7e5-ea17b49373e6
+# ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
