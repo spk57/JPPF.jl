@@ -11,6 +11,8 @@ invTab="Investments"
 "Read an excel tab into a dataframe"
 readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true))
 
+yearQtr(y)=string(year(y)-2000, "Q", quarterofyear(y))
+
 "Rename columns"
 function remapColumns!(transactions, transactionMap)
   symToCol(sym)=Int(sym)-Int('A')+1
@@ -21,6 +23,7 @@ function remapColumns!(transactions, transactionMap)
   end
   transactions[!,:Symbol] = strip.(transactions[!,:Symbol])
 end
+
 
 "read asset lists from excel file"
 function readAssetList(xls)

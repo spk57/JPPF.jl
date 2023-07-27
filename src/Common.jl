@@ -89,7 +89,7 @@ end
 function getMinClose(gmarkets)
   closeHL=combine(gmarkets, :Close => minimum)
   minClose=Dict{String, Float64}()
-  [minClose[closeHL[r, :Ticker]] = closeHL[r, :Close_minimum]  for r in 1:size(closeHL, 1)]
+  [minClose[closeHL[r, :Ticker]] = closeHL[r, :Close_minimum]  for r in eachrow(closeHL)]
   minClose
 end
 

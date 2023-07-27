@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.27
+# v0.17.5
 
 using Markdown
 using InteractiveUtils
@@ -50,6 +50,7 @@ begin
   configPath=joinpath(dataDir, configFile)
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
+  startDate=Date(config["StartDate"], "dd-u-yyyy")
   transFiles=map(strip, split(config["transactionFile"], ","))
   invPath=joinpath(dataDir,config["investmentFile"])
   transPaths=map(f -> joinpath(dataDir, f), transFiles)
@@ -61,6 +62,7 @@ begin
 	
   if dConfig 
 	  @htl("""
+     Start Date: $startDate <p/>Start Quarter: $(yearQtr(startDate))<br/>
      <table style="float:left;width:80%">
        <caption>Config File Paths</caption> 
 	   <tr><td>FilePath:</td>         <td>$(configPath)</td></tr>
@@ -123,6 +125,13 @@ begin
   """)
 end
 
+# ╔═╡ ae39e487-e218-4c14-98cc-6b65f7d1faa5
+begin
+  qr=startDate:Quarter(1):lastdayofquarter(today())
+  yic(d)=year(d)-2000
+  quarters=map(y -> [y, string(yic(y), "Q", quarterofyear(y))], qr)
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -155,9 +164,9 @@ project_hash = "1bbb0ca28bee17d0c22190446a26bbbd94d3bb33"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
-git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
+git-tree-sha1 = "91bd53c39b9cbfb5ef4b015e8b582d344532bd0a"
 uuid = "6e696c72-6542-2067-7265-42206c756150"
-version = "1.1.4"
+version = "1.2.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -201,10 +210,10 @@ uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
 version = "1.15.0"
 
 [[deps.DataFrames]]
-deps = ["Compat", "DataAPI", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
-git-tree-sha1 = "089d29c0fc00a190661517e4f3cba5dcb3fd0c08"
+deps = ["Compat", "DataAPI", "DataStructures", "Future", "InlineStrings", "InvertedIndices", "IteratorInterfaceExtensions", "LinearAlgebra", "Markdown", "Missings", "PooledArrays", "PrecompileTools", "PrettyTables", "Printf", "REPL", "Random", "Reexport", "SentinelArrays", "SortingAlgorithms", "Statistics", "TableTraits", "Tables", "Unicode"]
+git-tree-sha1 = "04c738083f29f86e62c8afc341f0967d8717bdb8"
 uuid = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-version = "1.6.0"
+version = "1.6.1"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -396,9 +405,9 @@ uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
 version = "0.3.21+4"
 
 [[deps.OrderedCollections]]
-git-tree-sha1 = "d321bf2de576bf25ec4d3e4360faca399afca282"
+git-tree-sha1 = "2e73fe17cac3c62ad1aebe70d44c963c3cfdc3e3"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
-version = "1.6.0"
+version = "1.6.2"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
@@ -413,9 +422,9 @@ version = "1.9.2"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "b478a748be27bd2f2c73a7690da219d0844db305"
+git-tree-sha1 = "e47cd150dbe0443c3a3651bc5b9cbd5576ab75b7"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.51"
+version = "0.7.52"
 
 [[deps.Polynomials]]
 deps = ["LinearAlgebra", "RecipesBase"]
@@ -453,9 +462,9 @@ version = "1.4.0"
 
 [[deps.PrettyTables]]
 deps = ["Crayons", "Formatting", "LaTeXStrings", "Markdown", "Reexport", "StringManipulation", "Tables"]
-git-tree-sha1 = "331cc8048cba270591eab381e7aa3e2e3fef7f5e"
+git-tree-sha1 = "542b1bd03329c1d235110f96f1bb0eeffc48a87d"
 uuid = "08abe8d2-0d0c-5749-adfa-8a2ac140af0d"
-version = "2.2.5"
+version = "2.2.6"
 
 [[deps.Printf]]
 deps = ["Unicode"]
@@ -545,10 +554,10 @@ uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 version = "1.0.3"
 
 [[deps.TableShowUtils]]
-deps = ["DataValues", "Dates", "JSON", "Markdown", "Test"]
-git-tree-sha1 = "14c54e1e96431fb87f0d2f5983f090f1b9d06457"
+deps = ["DataValues", "Dates", "JSON", "Markdown", "Unicode"]
+git-tree-sha1 = "2a41a3dedda21ed1184a47caab56ed9304e9a038"
 uuid = "5e66a065-1f0a-5976-b372-e0b8c017ca10"
-version = "0.2.5"
+version = "0.2.6"
 
 [[deps.TableTraits]]
 deps = ["IteratorInterfaceExtensions"]
@@ -640,5 +649,6 @@ version = "17.4.0+0"
 # ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
 # ╟─c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
+# ╠═ae39e487-e218-4c14-98cc-6b65f7d1faa5
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

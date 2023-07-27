@@ -82,7 +82,7 @@ pushRow!(d, df, row)=push!(d, df[row,1] => df[row,2])
 "Create a dictionary from name value pairs in a dataframe"
 function df2Dict!(df)
   d = Dict{String, Any}()
-  map(r -> pushRow!(d, df, r), 1:nrow(df))
+  map(r -> pushRow!(d, df, r), eachrow(df))
   d
 end
 
