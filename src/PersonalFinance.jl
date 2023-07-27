@@ -1,7 +1,7 @@
 #PersonalFinance.jl
 
 using DataFrames: Dict
-using Markdown, DataFrames, Query, XLSX, Polynomials
+using Dates, Markdown, DataFrames, Query, XLSX, Polynomials
 
 assetHistoryTab="AssetHistory";
 qtrTab="Qtrs"; 
@@ -11,7 +11,14 @@ invTab="Investments"
 "Read an excel tab into a dataframe"
 readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true))
 
-yearQtr(y)=string(year(y)-2000, "Q", quarterofyear(y))
+
+df=DateFormat("mm/dd/yyyy")
+stringToDate(s)=Date(strip(s),df)
+"Get year of century and quarter of year from string mdy"
+function yic(y)
+  m=stringToDate(y)
+  string(year(m)-2000, "Q", quarterofyear(m))
+end
 
 "Rename columns"
 function remapColumns!(transactions, transactionMap)
@@ -22,8 +29,10 @@ function remapColumns!(transactions, transactionMap)
     transactions=rename!(transactions, [col => key])
   end
   transactions[!,:Symbol] = strip.(transactions[!,:Symbol])
+  transform!(transactions, :Date => ByRow(stringToDate) => :DateD)
+  transform!(transactions, :Date => ByRow(yic) => :YQTR)
+  transactions.Amount=convert.(Float64, transactions.Amount);
 end
-
 
 "read asset lists from excel file"
 function readAssetList(xls)
@@ -31,10 +40,8 @@ function readAssetList(xls)
   assetHistory.Value=convert.(Float64, assetHistory.Amount);
   assetHistory.Savings=convert.(Float64, assetHistory.Savings);
   assetHistory.Growth=convert.(Float64, assetHistory.Growth);
-  qtrTable=	XLSX.readtable(xls, qtrTab, infer_eltypes=true);
-  quarters = DataFrame(qtrTable...);
   currentAssets=DataFrame(XLSX.readtable(xls, currentTab, infer_eltypes=true));
-  (assetHistory, quarters, currentAssets)
+  (assetHistory, currentAssets)
 end
 
 "join list of quarters to data points."

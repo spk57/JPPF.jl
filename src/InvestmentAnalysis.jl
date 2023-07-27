@@ -87,6 +87,7 @@ begin
   trs=map(tp -> readTab(tp, 1), transPaths)
   transactions=reduce(vcat, trs,  cols=:union)
   remapColumns!(transactions, transactionMap)
+  select
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
   syms=map(strip, syms)
@@ -127,10 +128,14 @@ end
 
 # ╔═╡ ae39e487-e218-4c14-98cc-6b65f7d1faa5
 begin
-  qr=startDate:Quarter(1):lastdayofquarter(today())
-  yic(d)=year(d)-2000
-  quarters=map(y -> [y, string(yic(y), "Q", quarterofyear(y))], qr)
+  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
+  amt=combine(transactions, :Amount => ByRow(+) => :Amount, :Symbol)
+  qsym=groupby(transactions, [:Symbol, :YQTR])
+  qsymAmt=combine(qsym, :Amount =>ByRow(+) => :Amount, :Symbol)
 end
+
+# ╔═╡ a6477fb8-b867-4c9b-a7bf-8357be62aef7
+#transactions
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -650,5 +655,6 @@ version = "17.4.0+0"
 # ╟─c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╠═ae39e487-e218-4c14-98cc-6b65f7d1faa5
+# ╠═a6477fb8-b867-4c9b-a7bf-8357be62aef7
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
