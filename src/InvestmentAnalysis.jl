@@ -86,8 +86,7 @@ begin
   stripMiss(s)=length(strip(s)) > 0 ? s : missing
   trs=map(tp -> readTab(tp, 1), transPaths)
   transactions=reduce(vcat, trs,  cols=:union)
-  remapColumns!(transactions, transactionMap)
-  select
+  cleanUp!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
   syms=map(strip, syms)
@@ -129,13 +128,14 @@ end
 # ╔═╡ ae39e487-e218-4c14-98cc-6b65f7d1faa5
 begin
   quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
-  amt=combine(transactions, :Amount => ByRow(+) => :Amount, :Symbol)
   qsym=groupby(transactions, [:Symbol, :YQTR])
   qsymAmt=combine(qsym, :Amount =>ByRow(+) => :Amount, :Symbol)
+  gslc=filter(:Symbol => s -> s=="TSM", transactions)
 end
 
-# ╔═╡ a6477fb8-b867-4c9b-a7bf-8357be62aef7
-#transactions
+# ╔═╡ 0113f02d-af77-4dad-9d76-a69087396194
+  #transactions=transactions[!,[:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR ]]
+transactions
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -648,13 +648,13 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╟─eb9f9aba-1367-4f31-b263-851895142013
-# ╟─37416573-808b-4dc9-906c-21ad030c26c6
+# ╠═eb9f9aba-1367-4f31-b263-851895142013
+# ╠═37416573-808b-4dc9-906c-21ad030c26c6
 # ╟─4b2fce2e-423c-4329-83e9-8d4abbbf34f8
 # ╟─56b90480-c5e8-4fc0-a539-af151894fbd1
 # ╟─c02bc28b-0723-45ea-a7e5-ea17b49373e6
 # ╟─88c60ff8-0028-445c-a534-fb6deb9f0c4d
 # ╠═ae39e487-e218-4c14-98cc-6b65f7d1faa5
-# ╠═a6477fb8-b867-4c9b-a7bf-8357be62aef7
+# ╠═0113f02d-af77-4dad-9d76-a69087396194
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

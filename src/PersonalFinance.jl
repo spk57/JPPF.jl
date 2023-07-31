@@ -1,7 +1,7 @@
 #PersonalFinance.jl
 
 using DataFrames: Dict
-using Dates, Markdown, DataFrames, Query, XLSX, Polynomials
+using Dates, DataFrames, XLSX, Polynomials, HypertextLiteral
 
 assetHistoryTab="AssetHistory";
 qtrTab="Qtrs"; 
@@ -14,24 +14,25 @@ readTab(xls, tabName)=DataFrame(XLSX.readtable(xls, tabName, infer_eltypes=true)
 
 df=DateFormat("mm/dd/yyyy")
 stringToDate(s)=Date(strip(s),df)
-"Get year of century and quarter of year from string mdy"
-function yic(y)
-  m=stringToDate(y)
-  string(year(m)-2000, "Q", quarterofyear(m))
-end
 
-"Rename columns"
-function remapColumns!(transactions, transactionMap)
+"Get year of century and quarter of year from date"
+yic(y)=string(year(y)-2000, "Q", quarterofyear(y))
+
+"Clean up columns and data"
+function cleanUp!(transactions, transactionMap)
   symToCol(sym)=Int(sym)-Int('A')+1
   for key in keys(transactionMap)  
-	sym=transactionMap[key][1]
-	col=symToCol(sym)
+	  sym=transactionMap[key][1]
+  	col=symToCol(sym)
     transactions=rename!(transactions, [col => key])
   end
+  filter!(:Symbol => s -> length(s)> 0, transactions); #Strip non purchase/sales transactions
   transactions[!,:Symbol] = strip.(transactions[!,:Symbol])
-  transform!(transactions, :Date => ByRow(stringToDate) => :DateD)
+  transform!(transactions, :Date => ByRow(stringToDate) => :Date)
   transform!(transactions, :Date => ByRow(yic) => :YQTR)
-  transactions.Amount=convert.(Float64, transactions.Amount);
+  transactions.Amount=-(convert.(Float64, transactions.Amount));
+  transactions.Quantity=convert.(Float64, transactions.Quantity)
+  transactions=transactions[!,[:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR ]]
 end
 
 "read asset lists from excel file"
@@ -44,51 +45,51 @@ function readAssetList(xls)
   (assetHistory, currentAssets)
 end
 
-"join list of quarters to data points."
-function qtrAssetTotals(assetHistory, quarters)
-  assetsQtr = @from i in assetHistory begin
-    @join j in quarters on i.YearQtr equals j.YearQtr
-    @select {j.Qtr, j.YearQtr, i.Value, i.Savings, i.Growth }
-    @collect DataFrame
-  end
-  assetsQtr
-end
+# "join list of quarters to data points."
+# function qtrAssetTotals(assetHistory, quarters)
+#   assetsQtr = @from i in assetHistory begin
+#     @join j in quarters on i.YearQtr equals j.YearQtr
+#     @select {j.Qtr, j.YearQtr, i.Value, i.Savings, i.Growth }
+#     @collect DataFrame
+#   end
+#   assetsQtr
+# end
 
 "Divide by 1000 and round"
 roundThousands(f, digits=1)=round(f/1000.0, digits=digits)
 
-"CurrentAssets"
-function getCurrentAssets(assetHistory, currentAssets, yq)
-  currentAssets= @from i in assetHistory begin
-    @join j in currentAssets on i.AssetID equals j.AssetID
-    @where i.YearQtr == yq
-    @select {j.Name, i.Value, i.Savings, i.Growth }
-    @collect DataFrame
-  end
-  currentAssets
-end
+# "CurrentAssets"
+# function getCurrentAssets(assetHistory, currentAssets, yq)
+#   currentAssets= @from i in assetHistory begin
+#     @join j in currentAssets on i.AssetID equals j.AssetID
+#     @where i.YearQtr == yq
+#     @select {j.Name, i.Value, i.Savings, i.Growth }
+#     @collect DataFrame
+#   end
+#   currentAssets
+# end
 
-"Sum net assets by quarter"
-function sumNetAssets(assetsQtr)
-  netAssets = assetsQtr |>
-    @groupby(_.Qtr,  (YearQtr=_.YearQtr, Qtr=_.Qtr, Value=_.Value)) |>
-    @map({Qtr=key(_), Value=roundThousands(sum(_.Value)) }) |>
-  	@orderby(_)|> DataFrame
-  netAssets
-end
+# "Sum net assets by quarter"
+# function sumNetAssets(assetsQtr)
+#   netAssets = assetsQtr |>
+#     @groupby(_.Qtr,  (YearQtr=_.YearQtr, Qtr=_.Qtr, Value=_.Value)) |>
+#     @map({Qtr=key(_), Value=roundThousands(sum(_.Value)) }) |>
+#   	@orderby(_)|> DataFrame
+#   netAssets
+# end
 
-"Sum assets or liabilities by quarter.  set assets = false for liabilities"
-function sumAssets(assetsQtr, assets=true)
-  netAssets = assetsQtr |>
-    @groupby(_.Qtr, (YearQtr=_.YearQtr, Qtr=_.Qtr, Value=_.Value, Savings=_.Savings, Growth=_.Growth)) |>
-    @map({Qtr=key(_), Net        =roundThousands(sum(    _.Value)), 
-                      Assets     =roundThousands(sum(gtz,_.Value)),
-                      Liabilities=roundThousands(sum(ltz,_.Value)), 
-                      Savings    =roundThousands(sum(    _.Savings)), 
-                      Growth     =roundThousands(sum(    _.Growth))}) |>
-  	@orderby(_)|> DataFrame
-  netAssets
-end
+# "Sum assets or liabilities by quarter.  set assets = false for liabilities"
+# function sumAssets(assetsQtr, assets=true)
+#   netAssets = assetsQtr |>
+#     @groupby(_.Qtr, (YearQtr=_.YearQtr, Qtr=_.Qtr, Value=_.Value, Savings=_.Savings, Growth=_.Growth)) |>
+#     @map({Qtr=key(_), Net        =roundThousands(sum(    _.Value)), 
+#                       Assets     =roundThousands(sum(gtz,_.Value)),
+#                       Liabilities=roundThousands(sum(ltz,_.Value)), 
+#                       Savings    =roundThousands(sum(    _.Savings)), 
+#                       Growth     =roundThousands(sum(    _.Growth))}) |>
+#   	@orderby(_)|> DataFrame
+#   netAssets
+# end
 
 "First order fit for asset growth"
 fitAssets(x, y)=fit(x, y, 1)
@@ -132,4 +133,14 @@ function pareto(df, col, rows=10,rounding=true)
   top=sortedP[1:rows,:]
   other= sortedP[rows+1:end, :]
   (top, other)
+end
+
+function displayStartup()
+	@htl("""<h1>Personal InvestmentAnalysis</h1>
+	  <p>Report Date:  $(today())</p>
+    """)
+  end
+"Run analysis without Pluto UI"
+function run(dataDir="../data", configFile="config.json", dConfig=true, dData=true)
+  displayStartup()
 end
