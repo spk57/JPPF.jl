@@ -140,7 +140,7 @@ function displayStartup()
 	  <p>Report Date:  $(today())</p>
     """)
   end
-"Run analysis without Pluto UI"
-function run(dataDir="../data", configFile="config.json", dConfig=true, dData=true)
-  displayStartup()
-end
+#"Run analysis without Pluto UI"
+#function run(dataDir="../data", configFile="config.json", dConfig=true, dData=true)
+#  displayStartup()
+#end

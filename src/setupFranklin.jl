@@ -30,14 +30,18 @@ end
 
 "Start the Franklin web server as a separate task."
 function startWeb(serverPath, port=8000)
-  w=getWorker()
+#  w=getWorker()
   t=@task web() 
   function web()
+    @info "Web: Changing dir from $(pwd()) to $serverPath"
     cd(serverPath)    
-    serve(port=port)
+    @info "Starting Franklin server uid : $(myid()) path: $serverPath"
+    s=serve(port=port)
+    @info "Exited Franklin server $s"
   end
-  schedule(t)
-  w
+  s=schedule(t)
+  @info "Task Scheduled $s"
+  t
 end
 
 "Stop the worker thread for the web server"
