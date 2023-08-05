@@ -1,6 +1,6 @@
 "Julia Programmers Personal Finance"
 module JPPF
-using Dates, Pkg, JSON, Hyperscript
+using Dates, Pkg, JSON
 
 #include("PersonalFinance.jl")
 include("setupFranklin.jl")
@@ -31,16 +31,20 @@ Personal Finance Tools intended to be flexible for people with Julia Language de
 """
 const folderIndex = """
 @def title = "Julia Programmers Personal Finance Configuration Summary"
-[Analysis](analysis)
-[Input Data][inputData]
+## Analysis Details: 
+* [Analysis](analysis)
+* [Input Data](inputData)
 ## Analysis Configuration Summary: 
 """
 const analysisTemplate = """
 @def title = "Julia Programmers Personal Finance Analysis"
+[Configuration](index)
 ## Analysis : 
 """
+#TODO Fix Franklin Display 
 const inputDataTemplate = """
 @def title = "Julia Programmers Personal Finance Input Data"
+[Configuration](index)
 ## Input Data : 
 """
 
@@ -50,23 +54,6 @@ parseDirName(dir)=monthabbr(parse(Int, SubString(dir, 5:6))) * sp * SubString(di
 
 "Write the index.md file within a folder"
 writeFolderIndex(path)=write(path, folderIndex)
-
-hTable=m("table")
-tr=m("tr")
-th=m("th")
-td=m("td")
-
-"Build html representation of a header"
-tableHeader(table)=map(th, columnnames(table))
-
-"Build html representation of a row"
-tableRow(table, row)=tr(map(td, values(table[row])))
-
-"Build html representation of all rows"
-tableBody(table)=map(r -> tableRow(table, r), 1:length(table))
-
-"Build html representation of a table"
-tableHTML(table)=hTable(tableHeader(table), tableBody(table))
 
 "Build Markup representation directory list"
 function dirMarkupList(dir) 
@@ -79,6 +66,7 @@ function openMD(path, file, template)
   p=joinpath(path, file)
   io=open(p, "w") 
   write(io, template)
+  flush(io)
   return io 
 end
 
@@ -100,13 +88,13 @@ function findOpenVersion(webPath)
   return p
 end
 
-"Main function to run JPPF"
-function run(dataDir="data", configFile="config.json", port=8001, overwrite=true)
+"start up JPPF"
+function startup(dataDir="data", configFile="config.json", port=8001)
   @info about()
   @info "dataDir: $dataDir"
   @info "configFile: $configFile" 
   @info "port: $port"
-
+  #TODO sort out these unused variables
   "Read the configuration file"
   configPath=joinpath(dataDir, configFile)
   configStr=read(configPath, String)
@@ -155,5 +143,22 @@ function run(dataDir="data", configFile="config.json", port=8001, overwrite=true
   end
 
   t=startWeb(webPath)
-end #run
+  (index=indIO, input=idIO, analysis=anaIO, config=config)
+end #startup
+
+"Log configuration information to web page"
+function logConfig(io, config)
+  println(io, "* Analysis Date: $today")
+  println(io, "* Start of Analysis Period: $(config["StartDate"])")
+  println(io, "* Transaction Files: $(config["transactionFile"])")
+  println(io, "* Transaction Map: $(config["transactionMap"])")
+  flush(io)
+end
+
+"Main program to run JPPF"
+function run(dataDir="data", configFile="config.json", port=8001)
+  control=startup(dataDir, configFile, port)
+  logConfig(control.index, control.config)
+end#run
+
 end #module
