@@ -30,8 +30,18 @@ Personal Finance Tools intended to be flexible for people with Julia Language de
 ## Analysis Folders: 
 """
 const folderIndex = """
-@def title = "Julia Programmers Personal Finance Folder"
-## Analysis Folder: 
+@def title = "Julia Programmers Personal Finance Configuration Summary"
+[Analysis](analysis)
+[Input Data][inputData]
+## Analysis Configuration Summary: 
+"""
+const analysisTemplate = """
+@def title = "Julia Programmers Personal Finance Analysis"
+## Analysis : 
+"""
+const inputDataTemplate = """
+@def title = "Julia Programmers Personal Finance Input Data"
+## Input Data : 
 """
 
 const sp=" "
@@ -64,12 +74,40 @@ function dirMarkupList(dir)
   string("* [", label, "](", dir, ")")
 end
 
+"Open a Markdown file with the given template"
+function openMD(path, file, template)
+  p=joinpath(path, file)
+  io=open(p, "w") 
+  write(io, template)
+  return io 
+end
+
+"Format the version number for file versions"
+verFormat(v)="v"*string(v, pad=2)
+verParse(sv)=parse(Int, SubString(sv, 2:3))
+const MAXVER=99
+
+"Find the next unused version number"
+function findOpenVersion(webPath)
+  #Create a folder for the analysis if it doesn't already exist
+  local p
+  v=0
+  for outer v in 1:MAXVER
+    p=joinpath(webPath, Dates.format(today, "yyyymm")* verFormat(v) * anaSuffix)
+    if !isdir(p) break end
+  end
+  if v >= MAXVER throw(OverflowError("Max version exceeded $v")) end
+  return p
+end
+
 "Main function to run JPPF"
-function run(dataDir="data", configFile="config.json", rVersion="v01", port=8001)
+function run(dataDir="data", configFile="config.json", port=8001, overwrite=true)
   @info about()
   @info "dataDir: $dataDir"
   @info "configFile: $configFile" 
   @info "port: $port"
+
+  "Read the configuration file"
   configPath=joinpath(dataDir, configFile)
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
@@ -85,8 +123,28 @@ function run(dataDir="data", configFile="config.json", rVersion="v01", port=8001
   @info "Web Path: $webPath"
   indexWeb=joinpath(webPath, "index.md")
   @info "Index.md $indexWeb"
-  anapath=joinpath(webPath, Dates.format(today, "yyyymm")* rVersion * anaSuffix)
-  isdir(anapath) ? println("[ Note: Analysis Path already exists $anapath") : mkpath(anapath)
+  anapath=findOpenVersion(webPath)
+  mkpath(anapath)
+  @info "Created analysis folder $anapath"
+
+  #Set up markup files in the folder
+  indexMarkdown="index.md"
+  indIO=openMD(anapath, indexMarkdown, folderIndex)
+  @info "Created markdown file index $indexMarkdown"
+
+  analysisMarkdown="analysis.md"
+  anaIO=openMD(anapath, analysisMarkdown, analysisTemplate)
+  @info "Created markdown file Analysis markup $analysisMarkdown "
+  
+  inputDataMarkdown="inputData.md"
+  idIO=openMD(anapath, inputDataMarkdown, inputDataTemplate)
+  @info "Created markdown file Input Data markup $inputDataMarkdown "
+
+  #Copy config file to the analysis folder
+  folderConfig=joinpath(anapath, configFile)
+  cp(configPath, folderConfig)
+
+  #List all of the Analysis folders on the web site
   @info "Analysis Path: $anapath"
   open(indexWeb, "w") do indexIO
     write(indexIO, indexText)
@@ -95,6 +153,7 @@ function run(dataDir="data", configFile="config.json", rVersion="v01", port=8001
     @info "Analysis Folders $folderList"
     map(f -> println(indexIO, f), folderList)
   end
+
   t=startWeb(webPath)
 end #run
 end #module
