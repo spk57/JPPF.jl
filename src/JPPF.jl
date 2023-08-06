@@ -2,7 +2,7 @@
 module JPPF
 using Dates, Pkg, JSON
 
-#include("PersonalFinance.jl")
+include("PersonalFinance.jl")
 include("setupFranklin.jl")
 const version=Pkg.project().version
 const today=Dates.today()
@@ -88,14 +88,17 @@ function findOpenVersion(webPath)
   return p
 end
 
+"Strip whitespace, return missing if nothing there"
+stripMiss(s)=length(strip(s)) > 0 ? s : missing
+
 "start up JPPF"
 function startup(dataDir="data", configFile="config.json", port=8001)
   @info about()
   @info "dataDir: $dataDir"
   @info "configFile: $configFile" 
   @info "port: $port"
-  #TODO sort out these unused variables
-  "Read the configuration file"
+
+  #Read the configuration file"
   configPath=joinpath(dataDir, configFile)
   configStr=read(configPath, String)
   config=JSON.parse(configStr)["Config"]
@@ -103,10 +106,6 @@ function startup(dataDir="data", configFile="config.json", port=8001)
   @info "Start Date: $startDate"
   transFiles=map(strip, split(config["transactionFile"], ","))
   @info "Transaction Files: $transFiles"
-  transPaths=map(f -> joinpath(dataDir, f), transFiles)
-  transactionMap=config["transactionMap"]
-  tKey=sort(collect(keys(transactionMap)))
-  configTRE=config["RegularExpressions"]
   webPath=joinpath(dataDir, config["webFolder"])
   @info "Web Path: $webPath"
   indexWeb=joinpath(webPath, "index.md")
@@ -143,15 +142,39 @@ function startup(dataDir="data", configFile="config.json", port=8001)
   end
 
   t=startWeb(webPath)
-  (index=indIO, input=idIO, analysis=anaIO, config=config)
+  (index=indIO, input=idIO, analysis=anaIO, config=config, files=transFiles)
 end #startup
 
-"Log configuration information to web page"
+"Log configuration information to the index web page"
 function logConfig(io, config)
-  println(io, "* Analysis Date: $today")
+  println(io, "Analysis Date: $today")
   println(io, "* Start of Analysis Period: $(config["StartDate"])")
   println(io, "* Transaction Files: $(config["transactionFile"])")
   println(io, "* Transaction Map: $(config["transactionMap"])")
+  flush(io)
+end
+
+"Merge and cleanse transaction files"
+function cleanseTransactions(dataDir, transFiles, config)
+  transactionMap=config["transactionMap"]
+  transPaths=map(f -> joinpath(dataDir, f), transFiles)
+  tKey=sort(collect(keys(transactionMap)))
+  configTRE=config["RegularExpressions"]
+  trs=map(tp -> readTab(tp, 1), transPaths)
+  transactions=reduce(vcat, trs,  cols=:union)
+  cleanUp!(transactions, transactionMap)
+  tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
+  syms=collect(skipmissing(map(stripMiss, tNames)))
+  stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  cds=sort(filter(s -> isnumeric(s[1]), syms))
+  holdings=split(config["Holdings"], ",")
+  (trans=transactions, syms=syms, stocks=stocks, cds=cds, holdings=holdings)
+end
+
+"Log transaction information to the data web page"
+function logData(io, tSum)
+  println(io, "Analysis Date: $today")
+  println(io, "* Stocks $(tSum.stocks)")
   flush(io)
 end
 
@@ -159,6 +182,8 @@ end
 function run(dataDir="data", configFile="config.json", port=8001)
   control=startup(dataDir, configFile, port)
   logConfig(control.index, control.config)
+  tSum=cleanseTransactions(dataDir, control.files, control.config)
+  logData(control.input, tSum)
 end#run
 
 end #module
