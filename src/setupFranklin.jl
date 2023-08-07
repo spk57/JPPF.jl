@@ -28,15 +28,15 @@ function getWorker()
   workers()[end]
 end
 
+#TODO This is not working start Franklin in a separate process
 "Start the Franklin web server as a separate task."
 function startWeb(serverPath, port=8000)
-#  w=getWorker()
+  return nothing
   t=@task web() 
   function web()
-    @info "Web: Changing dir from $(pwd()) to $serverPath"
-    cd(serverPath)    
     @info "Starting Franklin server uid : $(myid()) path: $serverPath"
-    s=serve(port=port)
+    @info "Web: Changing dir from $(pwd()) to $serverPath"
+    cd(serve(port=port), serverPath)    
     @info "Exited Franklin server $s"
   end
   s=schedule(t)

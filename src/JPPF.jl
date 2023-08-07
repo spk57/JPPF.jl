@@ -1,6 +1,6 @@
 "Julia Programmers Personal Finance"
 module JPPF
-using Dates, Pkg, JSON
+using Dates, Pkg, JSON, DataFrames
 
 include("PersonalFinance.jl")
 include("setupFranklin.jl")
@@ -91,7 +91,7 @@ function startup(dataDir="data", configFile="config.json", port=8001)
   @info about()
   @info "dataDir: $dataDir"
   @info "configFile: $configFile" 
-  @info "port: $port"
+#  @info "port: $port"
 
   #Read the configuration file"
   configPath=joinpath(dataDir, configFile)
@@ -140,12 +140,18 @@ function startup(dataDir="data", configFile="config.json", port=8001)
   (index=indIO, input=idIO, analysis=anaIO, config=config, files=transFiles)
 end #startup
 
+"HTML Display a formatted table or dictionary"
+function dispTable(io, table, title, show_header=false)
+  s=pretty_table(String, table,  backend = Val(:html), show_header=show_header, title=title, alignment=:l)
+  writeHTML(io, s)
+end
+
 "Log configuration information to the index web page"
 function logConfig(io, config)
   println(io, "Analysis Date: $today")
   println(io, "* Start of Analysis Period: $(config["StartDate"])")
-  pretty_table(io, config["transactionFile"], backend = Val(:html), show_header=false, title="Transaction Files", alignment=:l)
-  println(io, "* Transaction Map: $(config["transactionMap"])")
+  println(io, "* Transaction Files: $(config["transactionFile"])")
+  dispTable(io, sort(config["transactionMap"]), "Transaction Map")
   flush(io)
 end
 
@@ -158,29 +164,48 @@ function cleanseTransactions(dataDir, transFiles, config)
   cleanUp!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
-  @info "Symbols from Transaction files: $syms"
   stocks=sort(filter(s -> !isnumeric(s[1]), syms))
-  @info "Stocks from Transaction files: $stocks"
   cds=sort(filter(s -> isnumeric(s[1]), syms))
   holdings=split(config["Holdings"], ",")
   (trans=transactions, syms=syms, stocks=stocks, cds=cds, holdings=holdings)
 end
 
+"Filter transactions"
+isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
+isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
+isANY(t)=true
+
 "Log transaction information to the data web page"
-function logData(io, tSum)
+function logData(io, tSum, config)
   println(io, "Analysis Date: $today")
   @info "Stocks: $(tSum.stocks)"
   writeHTML(io, collectionHTML(tSum.stocks, "Stocks"))
   writeHTML(io, collectionHTML(tSum.cds, "CDS"))
+  writeHTML(io, collectionHTML(tSum.holdings, "Holdings"))
+  
+  #Summary information
+  configTRE=config["RegularExpressions"]
+  filt(s,is)=filter([:Action, :Symbol] => (a,sym) ->     	occursin(Regex(configTRE[s],"i"), a) && is(sym) , tSum.trans);
+  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isStock),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
+#  totTab=transpose(tots)
+  totM=reshape(collect(Iterators.flatten(tots)), (4,8))
+  cols=totM[1,:]
+  body=totM[2:end, :]
+  totTab=DataFrame(body, cols)
+  dispTable(io, totTab, "Totals", true)  
   flush(io)
 end
 
 "Main program to run JPPF"
 function run(dataDir="data", configFile="config.json", port=8001)
   control=startup(dataDir, configFile, port)
+  @info "Startup complete"
   logConfig(control.index, control.config)
+  @info "logConfig complete"
   tSum=cleanseTransactions(dataDir, control.files, control.config)
-  logData(control.input, tSum)
+  @info "CleanseTransactions complete"
+  logData(control.input, tSum, control.config)
+  @info "logData Complete"
 end#run
-
+run("../jppfdata")
 end #module
