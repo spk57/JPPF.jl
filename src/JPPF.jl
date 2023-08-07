@@ -4,6 +4,8 @@ using Dates, Pkg, JSON
 
 include("PersonalFinance.jl")
 include("setupFranklin.jl")
+include("HTMLHelpers.jl")
+
 const version=Pkg.project().version
 const today=Dates.today()
 const started=Dates.now()
@@ -11,13 +13,6 @@ const startDir=pwd()
 const program=@__MODULE__
 
 about()="$program Version: $version $(string(started))"
-
-const htmlStr="~~~"
-"write and flush a string to the io"
-writefl(io, str)=begin write(io, str);flush(io)end
-
-"write an HTML string to the output"
-writeHTML(io, str)=write(io, string(htmlStr, str, htmlStr))
 
 const anaSuffix="_ANA"
 "get a list of analysis folders"
@@ -149,23 +144,23 @@ end #startup
 function logConfig(io, config)
   println(io, "Analysis Date: $today")
   println(io, "* Start of Analysis Period: $(config["StartDate"])")
-  println(io, "* Transaction Files: $(config["transactionFile"])")
+  pretty_table(io, config["transactionFile"], backend = Val(:html), show_header=false, title="Transaction Files", alignment=:l)
   println(io, "* Transaction Map: $(config["transactionMap"])")
   flush(io)
 end
 
 "Merge and cleanse transaction files"
 function cleanseTransactions(dataDir, transFiles, config)
+  transPaths=map(f -> joinpath(dataDir, f), transFiles) #Get paths for transaction files
   transactionMap=config["transactionMap"]
-  transPaths=map(f -> joinpath(dataDir, f), transFiles)
-  tKey=sort(collect(keys(transactionMap)))
-  configTRE=config["RegularExpressions"]
-  trs=map(tp -> readTab(tp, 1), transPaths)
-  transactions=reduce(vcat, trs,  cols=:union)
+  trs=map(tp -> readTab(tp, 1), transPaths) #Rename columns to match expected
+  transactions=reduce(vcat, trs,  cols=:union) #Merge transaction files
   cleanUp!(transactions, transactionMap)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
+  @info "Symbols from Transaction files: $syms"
   stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  @info "Stocks from Transaction files: $stocks"
   cds=sort(filter(s -> isnumeric(s[1]), syms))
   holdings=split(config["Holdings"], ",")
   (trans=transactions, syms=syms, stocks=stocks, cds=cds, holdings=holdings)
@@ -174,7 +169,9 @@ end
 "Log transaction information to the data web page"
 function logData(io, tSum)
   println(io, "Analysis Date: $today")
-  println(io, "* Stocks $(tSum.stocks)")
+  @info "Stocks: $(tSum.stocks)"
+  writeHTML(io, collectionHTML(tSum.stocks, "Stocks"))
+  writeHTML(io, collectionHTML(tSum.cds, "CDS"))
   flush(io)
 end
 
