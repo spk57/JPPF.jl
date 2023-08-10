@@ -1,5 +1,5 @@
 # Common.jl
-using Dates, DataFrames
+using Dates
 import Base.<, Base.==, Base.show, Base.string
 
 abstract type Asset end
@@ -27,6 +27,7 @@ st2df(xs, s)=DataFrame(Dict(n=>[getfield(x, n) for x in xs] for n in fieldnames(
 
 "The value of 1 holding at 1 time"
 struct HoldingValue
+  date::Date
   value::Float64
   quantity::Float64
 end
@@ -39,13 +40,15 @@ Base.@kwdef mutable struct Holding
 end
 
 Holding(name::Symbol, description)=Holding(name, description, Dict{Date, HoldingValue}())
+Holding(name::String, description)=Holding(Symbol(name), description)
 Holding(name::Symbol)=Holding(name, missing)
 get(holding, date)=holding.values[date]
-set(holding, date, value, quantity)=push!(holding, (date => HoldingValue(value, quantity)))
-
+set(holding, date, value, quantity)=push!(holding.values, (date => HoldingValue(date, value, quantity)))
+set(holding, holdingValue)=push!(holding.values, holdingValue.date => holdingValue)
 getSorted(holding)=sort(collect(keys(holding.values)))
-getLast(holding)=last(getSorted(holding))
+getLast(holding)=get(holding, last(getSorted(holding)))
+getFirst(holding)=get(holding, first(getSorted(holding)))
 
 #Holding(name::Symbol)=Holding(date, name, count, missing)
 #Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
-3Base.show(io::IO, h::Holding)=show(io,string(h))
+#Base.show(io::IO, h::Holding)=show(io,string(h))
