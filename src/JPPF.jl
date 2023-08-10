@@ -5,6 +5,7 @@ using Dates, Pkg, JSON, DataFrames
 include("PersonalFinance.jl")
 include("setupFranklin.jl")
 include("HTMLHelpers.jl")
+include("Common.jl")
 
 const version=Pkg.project().version
 const today=Dates.today()
@@ -33,13 +34,11 @@ const folderIndex = """
 """
 const analysisTemplate = """
 @def title = "Julia Programmers Personal Finance Analysis"
-[Configuration](index)
 ## Analysis : 
 """
 #TODO Fix Franklin Display 
 const inputDataTemplate = """
 @def title = "Julia Programmers Personal Finance Input Data"
-[Configuration](index)
 ## Input Data : 
 """
 
@@ -71,7 +70,18 @@ verParse(sv)=parse(Int, SubString(sv, 2:3))
 const MAXVER=99
 
 "Find the next unused version number"
-function findOpenVersion(webPath)
+function findOpenVersion(webPath, clearVersion)
+  v=0
+  if clearVersion #clear old versions for same date
+    for outer v in 1:MAXVER
+      p=joinpath(webPath, Dates.format(today, "yyyymm")* verFormat(v) * anaSuffix)
+      if isdir(p) 
+        rm(p, force=true, recursive=true) 
+      else
+        break
+      end
+    end
+  end
   #Create a folder for the analysis if it doesn't already exist
   local p
   v=0
@@ -87,11 +97,10 @@ end
 stripMiss(s)=length(strip(s)) > 0 ? s : missing
 
 "start up JPPF"
-function startup(dataDir="data", configFile="config.json", port=8001)
+function startup(dataDir="data", configFile="config.json", clearVersion=true)
   @info about()
   @info "dataDir: $dataDir"
   @info "configFile: $configFile" 
-#  @info "port: $port"
 
   #Read the configuration file"
   configPath=joinpath(dataDir, configFile)
@@ -105,7 +114,7 @@ function startup(dataDir="data", configFile="config.json", port=8001)
   @info "Web Path: $webPath"
   indexWeb=joinpath(webPath, "index.md")
   @info "Index.md $indexWeb"
-  anapath=findOpenVersion(webPath)
+  anapath=findOpenVersion(webPath,clearVersion)
   mkpath(anapath)
   @info "Created analysis folder $anapath"
 
@@ -141,8 +150,8 @@ function startup(dataDir="data", configFile="config.json", port=8001)
 end #startup
 
 "HTML Display a formatted table or dictionary"
-function dispTable(io, table, title, show_header=false)
-  s=pretty_table(String, table,  backend = Val(:html), show_header=show_header, title=title, alignment=:l)
+function dispTable(io, table, title, row_labels=nothing, show_header=false)
+  s=pretty_table(String, table,  backend = Val(:html), show_header=show_header, row_labels=row_labels, show_subheader=false, title=title, alignment=:l)
   writeHTML(io, s)
 end
 
@@ -175,6 +184,16 @@ isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
 isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
 isANY(t)=true
 
+function updateHolding(holdingsHistory, transaction)
+  filt(s,is)=filter([:Action, :Symbol, :Quantity, :Amount ] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , transactions);
+end
+
+"Use the transaction history to build a history of holdings"
+function buildHoldingsHistory(transactions)
+  holdingsHistory=Array{Holding}()
+  #:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR 
+end
+
 "Log transaction information to the data web page"
 function logData(io, tSum, config)
   println(io, "Analysis Date: $today")
@@ -185,20 +204,37 @@ function logData(io, tSum, config)
   
   #Summary information
   configTRE=config["RegularExpressions"]
-  filt(s,is)=filter([:Action, :Symbol] => (a,sym) ->     	occursin(Regex(configTRE[s],"i"), a) && is(sym) , tSum.trans);
+  filt(s,is)=filter([:Action, :Symbol] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , tSum.trans);
   tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isStock),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
-#  totTab=transpose(tots)
   totM=reshape(collect(Iterators.flatten(tots)), (4,8))
   cols=totM[1,:]
   body=totM[2:end, :]
   totTab=DataFrame(body, cols)
-  dispTable(io, totTab, "Totals", true)  
+  dispTable(io, totTab, "Transaction Totals", ["Total", "Stock", "CD"],  true)  
+  flush(io)
+end
+
+function quarterSummary(io, tSum)
+  #  sym=groupby(transactions, [:Symbol, :YQTR])
+  transactions=tSum.trans
+  qsym=groupby(transactions, [:Symbol, :YQTR])
+  qsymAmt=combine(qsym, :Amount =>ByRow(+) => :Amount, :Symbol)
+  @info "QSym Amt: $qsymAmt"
+  tsm=filter(:Symbol => s -> s=="TSM", transactions)
+  dispTable(io, tsm,"TSM")
+end
+
+function logAnalysis(io, tSum, config)
+  startDate=Date(config["StartDate"], "dd-u-yyyy")
+  println(io, "Analysis DateTime: $started")
+#  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
+  quarterSummary(io, tSum)
   flush(io)
 end
 
 "Main program to run JPPF"
-function run(dataDir="data", configFile="config.json", port=8001)
-  control=startup(dataDir, configFile, port)
+function run(dataDir="data", configFile="config.json", clearVersions=true)
+  control=startup(dataDir, configFile, clearVersions)
   @info "Startup complete"
   logConfig(control.index, control.config)
   @info "logConfig complete"
@@ -206,6 +242,8 @@ function run(dataDir="data", configFile="config.json", port=8001)
   @info "CleanseTransactions complete"
   logData(control.input, tSum, control.config)
   @info "logData Complete"
+  logAnalysis(control.analysis, tSum, control.config)
 end#run
+
 run("../jppfdata")
 end #module

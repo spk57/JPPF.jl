@@ -134,13 +134,3 @@ function pareto(df, col, rows=10,rounding=true)
   other= sortedP[rows+1:end, :]
   (top, other)
 end
-
-function displayStartup()
-	@htl("""<h1>Personal InvestmentAnalysis</h1>
-	  <p>Report Date:  $(today())</p>
-    """)
-  end
-#"Run analysis without Pluto UI"
-#function run(dataDir="../data", configFile="config.json", dConfig=true, dData=true)
-#  displayStartup()
-#end
