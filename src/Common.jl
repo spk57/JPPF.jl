@@ -29,7 +29,8 @@ st2df(xs, s)=DataFrame(Dict(n=>[getfield(x, n) for x in xs] for n in fieldnames(
 struct HoldingValue
   date::Date
   value::Float64
-  quantity::Float64
+  change::Float64
+  total::Float64
 end
 
 "Information about a Holding"
@@ -43,8 +44,13 @@ Holding(name::Symbol, description)=Holding(name, description, Dict{Date, Holding
 Holding(name::String, description)=Holding(Symbol(name), description)
 Holding(name::Symbol)=Holding(name, missing)
 get(holding, date)=holding.values[date]
-set(holding, date, value, quantity)=push!(holding.values, (date => HoldingValue(date, value, quantity)))
+"Set the value for a change in a holding"
+function set(holding, date, value, quantity)
+  last=getLast(holding)
+  push!(holding.values, (date => HoldingValue(date, value, quantity, quantity + last.total)))
+end
 set(holding, holdingValue)=push!(holding.values, holdingValue.date => holdingValue)
+
 getSorted(holding)=sort(collect(keys(holding.values)))
 getLast(holding)=get(holding, last(getSorted(holding)))
 getFirst(holding)=get(holding, first(getSorted(holding)))

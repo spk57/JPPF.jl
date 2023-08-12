@@ -184,14 +184,22 @@ isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
 isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
 isANY(t)=true
 
-function updateHolding(holdingsHistory, transaction)
-  filt(s,is)=filter([:Action, :Symbol, :Quantity, :Amount ] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , transactions);
+"add or update holding history from the transaction"
+function updateHolding!(holdingsHistory, transaction)
+  if haskey(holdingsHistory, transaction.Symbol)
+    h=Holding(transaction.Symbol)
+    holdingsHistory.push!(transaction.Symbol, h)
+  else
+    h=holdingsHistory[transaction.symbol]
+  end
+  set(h, transaction.Date, transaction.Value, transaction.Quantity)
 end
 
 "Use the transaction history to build a history of holdings"
 function buildHoldingsHistory(transactions)
-  holdingsHistory=Array{Holding}()
-  #:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR 
+  holdingsHistory=Dict{Symbol, Holding}()
+  map(updateHolding!(holdingsHistory, symbol), transaction)
+  return holdingsHistory
 end
 
 "Log transaction information to the data web page"
@@ -227,6 +235,7 @@ end
 function logAnalysis(io, tSum, config)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
   println(io, "Analysis DateTime: $started")
+  buildHoldingsHistory(tSum.trans)
 #  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
   quarterSummary(io, tSum)
   flush(io)

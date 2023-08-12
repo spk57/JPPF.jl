@@ -18,6 +18,12 @@ stringToDate(s)=Date(strip(s),df)
 "Get year of century and quarter of year from date"
 yic(y)=string(year(y)-2000, "Q", quarterofyear(y))
 
+function getTransactionAction(s, filters)
+  matches=map(f -> match(s, f), !isnothing, filters)
+  #clean up regex to return the action 
+  action=map(!isnothing, matches)
+end
+
 "Clean up columns and data"
 function cleanUp!(transactions, transactionMap)
   symToCol(sym)=Int(sym)-Int('A')+1
