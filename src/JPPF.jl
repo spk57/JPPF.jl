@@ -172,6 +172,10 @@ function cleanseTransactions(dataDir, transFiles, config)
   trs=map(tp -> readTab(tp, 1), transPaths) #Rename columns to match expected
   transactions=reduce(vcat, trs,  cols=:union) #Merge transaction files
   cleanUp!(transactions, transactionMap)
+  regularText=config["RegularExpressions"]
+  regularDict=formatRE(regularText)
+#  getType(s)=getType(s, regularDict)
+  transactions=transform(transactions, :Action => ByRow(a -> getType(a, regularDict)) => :ActionCode)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
   stocks=sort(filter(s -> !isnumeric(s[1]), syms))
@@ -199,8 +203,8 @@ end
 "Use the transaction history to build a history of holdings"
 function buildHoldingsHistory(transactions)
   
-  fTransactions=
-#  holdingsHistory=Dict{Symbol, Holding}()
+#  fTransactions=
+  holdingsHistory=Dict{Symbol, Holding}()
   #Filter actions
 #  map(updateHolding!(holdingsHistory, symbol), transaction)
   return holdingsHistory
@@ -258,5 +262,5 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   logAnalysis(control.analysis, tSum, control.config)
 end#run
 
-#run("../jppfdata")
+run("../jppfdata")
 end #module

@@ -16,7 +16,8 @@ isMatch(b, k)=b ? k : missing
 function getType(str, reDict)
   keyList=collect(keys(reDict))
   m=map(k -> isMatch(occursin(reDict[k], str), k) , keyList) 
-  collect(skipmissing(m))[1]
+  nonMissing=collect(skipmissing(m))
+  length(nonMissing) > 0 ? nonMissing[1] : :Unmatched
 end
 
   

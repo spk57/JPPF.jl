@@ -22,7 +22,6 @@ include(common)
 #  @test length(todayChanges) == 2
 end
 
-
 @testset "Match.jl" begin
   s1=" REINVESTMENT as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
   s2=" DIVIDEND RECEIVED as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
