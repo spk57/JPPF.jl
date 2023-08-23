@@ -6,6 +6,7 @@ include("PersonalFinance.jl")
 include("setupFranklin.jl")
 include("HTMLHelpers.jl")
 include("Common.jl")
+include("Match.jl")
 
 const version=Pkg.project().version
 const today=Dates.today()
@@ -197,8 +198,11 @@ end
 
 "Use the transaction history to build a history of holdings"
 function buildHoldingsHistory(transactions)
-  holdingsHistory=Dict{Symbol, Holding}()
-  map(updateHolding!(holdingsHistory, symbol), transaction)
+  
+  fTransactions=
+#  holdingsHistory=Dict{Symbol, Holding}()
+  #Filter actions
+#  map(updateHolding!(holdingsHistory, symbol), transaction)
   return holdingsHistory
 end
 
@@ -254,5 +258,5 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   logAnalysis(control.analysis, tSum, control.config)
 end#run
 
-run("../jppfdata")
+#run("../jppfdata")
 end #module

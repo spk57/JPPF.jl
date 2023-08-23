@@ -4,7 +4,6 @@ authors = ["spk57 <spkuhlman@outlook.com> and contributors"]
 version = "0.1.0"
 
 [deps]
-AlgebraOfGraphics = "cbdf2221-f076-402e-a563-3d30da359d67"
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 BrowseTables = "5f4fecfd-7eb0-5078-b7f6-ad1f2563c22a"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -19,6 +18,7 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 KeywordSearch = "f977ba8c-7144-47e8-b06b-e3f658952959"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 MarketData = "945b72a4-3b13-509d-9b46-1525bb5c06de"
+Match = "7eb4fadd-790c-5f42-8a69-bfa0b872bfbf"
 NPFinancial = "d92e12fc-aea5-418c-9372-8108a4db1700"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PlotThemes = "ccf2f8ad-2431-5c83-bf29-c5338b663b6a"

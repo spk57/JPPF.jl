@@ -1,5 +1,6 @@
 {"Config" :{
     "investmentFile" : "Investments.xlsx",
+    "webFolder"      : "franklin", 
     "transactionFile" : "Transactions.xlsx", 
     "transactionMap" : {
       "Action"   : "B", 
@@ -9,14 +10,14 @@
     },
     "Holdings" : "House, Pension", 
     "RegularExpressions" : {
-      "Dividend" : "r\"r.*dividend.*\"i", 
-      "Interest" : "r\"r.*interest.*\"i", 
-      "Reinvestment" : "r\"r.*reinvest.*\"i", 
-      "Purchase" : "r\"r.*bought.*\"i", 
-      "Sale" : "r\"r.*sold.*\"i", 
-      "Transfer" : "r\"r.*transfer.*\"i", 
-      "ForeignTax" : "r\"r.*foreign.*\"i", 
-      "Merger" : "r\"r.*merger.*\"i"
+      "Dividend" : "dividend",
+      "Interest" : "interest",
+      "Reinvestment" : "reinvest",
+      "Bought" : "bought",
+      "Sold" : "sold",
+      "Transfer" : "transfer",
+      "ForeignTax" : "foreign",
+      "Merger" : "merger"
     }
   }
 }
