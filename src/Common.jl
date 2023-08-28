@@ -36,25 +36,40 @@ end
 "Information about a Holding"
 Base.@kwdef mutable struct Holding
   name::Symbol
+  class::Union{Symbol, Nothing}
   description::Union{String, Missing}
   values=Dict{Date, HoldingValue}() 
 end
 
-Holding(name::Symbol, description)=Holding(name, description, Dict{Date, HoldingValue}())
+#Holding Constructors
+Holding(name::Symbol, description)=
+  Holding(name, matchTransactionType(name), description, Dict{Date, HoldingValue}())
 Holding(name::String, description)=Holding(Symbol(name), description)
 Holding(name::Symbol)=Holding(name, missing)
+
+print(holding)=print("$(holding.name) $(holding.class)")
 get(holding, date)=holding.values[date]
 "Set the value for a change in a holding"
 function set(holding, date, value, quantity)
-  last=getLast(holding)
-  push!(holding.values, (date => HoldingValue(date, value, quantity, quantity + last.total)))
+  total=if length(holding.values)> 0
+      last=getLast(holding)
+      quantity + last.total
+    else
+      quantity
+  end
+  push!(holding.values, (date => HoldingValue(date, value, quantity, total)))
 end
 set(holding, holdingValue)=push!(holding.values, holdingValue.date => holdingValue)
 
 getSorted(holding)=sort(collect(keys(holding.values)))
 getLast(holding)=get(holding, last(getSorted(holding)))
 getFirst(holding)=get(holding, first(getSorted(holding)))
-
+getBasisValue(holding)=getFirst(holding).value
+getCurrentValue(holding)=getLast(holding).value
+getProfitPerShare(holding)=getCurrentValue(holding)-getBasisValue(holding)
+getProfitTotal(holding)=(getCurrentValue(holding)-getBasisValue(holding))*getLast(holding).Total
+isCD(cl::Symbol)=(cl == :CD)
+isStock(cl::Symbol)=(cl==:Stock)
 #Holding(name::Symbol)=Holding(date, name, count, missing)
 #Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
 #Base.show(io::IO, h::Holding)=show(io,string(h))

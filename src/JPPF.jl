@@ -186,27 +186,28 @@ end
 
 "Filter transactions"
 isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
-isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
+isCD(t::AbstractString)=length(t) > 0 && isdigit(strip(t)[1])
 isANY(t)=true
 
 "add or update holding history from the transaction"
 function updateHolding!(holdingsHistory, transaction)
-  if haskey(holdingsHistory, transaction.Symbol)
-    h=Holding(transaction.Symbol)
-    holdingsHistory.push!(transaction.Symbol, h)
+  sym=Symbol(transaction.Symbol)
+  if !haskey(holdingsHistory, sym)
+    h=Holding(sym)
+    push!(holdingsHistory, sym =>  h)
   else
-    h=holdingsHistory[transaction.symbol]
+    h=holdingsHistory[sym]
   end
   set(h, transaction.Date, transaction.Value, transaction.Quantity)
 end
 
 "Use the transaction history to build a history of holdings"
 function buildHoldingsHistory(transactions)
-  
-#  fTransactions=
+  #Transactions that change the amount of assets owned
+  buySellcodes=[:Bought, :Sold, :Reinvestment] 
+  fTransactions=filter(t -> t.ActionCode in buySellcodes,  transactions)
   holdingsHistory=Dict{Symbol, Holding}()
-  #Filter actions
-#  map(updateHolding!(holdingsHistory, symbol), transaction)
+  map(ft -> updateHolding!(holdingsHistory, ft), eachrow(fTransactions))
   return holdingsHistory
 end
 
@@ -236,14 +237,23 @@ function quarterSummary(io, tSum)
   qsym=groupby(transactions, [:Symbol, :YQTR])
   qsymAmt=combine(qsym, :Amount =>ByRow(+) => :Amount, :Symbol)
   @info "QSym Amt: $qsymAmt"
-  tsm=filter(:Symbol => s -> s=="TSM", transactions)
-  dispTable(io, tsm,"TSM")
+#  tsm=filter(:Symbol => s -> s=="TSM", transactions)
+#  dispTable(io, tsm,"TSM")
 end
+
+"Calculate the profit and loss for a holding"
+getProfitandLoss(holdings)=map(h-> (h, getProfit(holdings[h])), sort(collect(keys(holdings))))
 
 function logAnalysis(io, tSum, config)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
   println(io, "Analysis DateTime: $started")
-  buildHoldingsHistory(tSum.trans)
+  holdings=buildHoldingsHistory(tSum.trans)
+  stockColl=[!isnothing(h.second.class) && isStock(h.second.class) ? h : nothing for h in holdings ]
+  stockHoldings=filter(isnothing, [isStock(h.second.class) ? h : nothing for h in holdings ] )
+  pl=getProfitandLossPerShare(stockHoldings)
+  plt=getProfitTotal(stockHoldings)
+  dispTable(io, pl, "Profit and Loss of holdings per Share")
+  dispTable(io, plt, "Profit and Loss of holdings total")
 #  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
   quarterSummary(io, tSum)
   flush(io)

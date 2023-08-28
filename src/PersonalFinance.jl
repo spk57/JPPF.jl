@@ -1,6 +1,5 @@
 #PersonalFinance.jl
 
-using DataFrames: Dict
 using Dates, DataFrames, XLSX, Polynomials, HypertextLiteral
 
 assetHistoryTab="AssetHistory";
@@ -38,6 +37,7 @@ function cleanUp!(transactions, transactionMap)
   transform!(transactions, :Date => ByRow(yic) => :YQTR)
   transactions.Amount=-(convert.(Float64, transactions.Amount));
   transactions.Quantity=convert.(Float64, transactions.Quantity)
+  transactions.Value.=transactions.Amount ./ transactions.Quantity
   transactions=transactions[!,[:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR ]]
 end
 

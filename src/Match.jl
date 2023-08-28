@@ -1,5 +1,6 @@
-#Match.jl functions for matching transaction types from strings in transaction files
-using Match, JSON
+#Match.jl 
+#Matching functions
+using Match
 
 "create a copy dictionary of the RE's with RegularExpressions replacing the re string"
 function formatRE(re)
@@ -20,4 +21,11 @@ function getType(str, reDict)
   length(nonMissing) > 0 ? nonMissing[1] : :Unmatched
 end
 
+function matchTransactionType(str)
+@match str begin
+    r"[A-Z]*"i => :Stock
+    r"[A-Z,0-9]*"i => :CD
+    _ => nothing
+  end
+end
   
