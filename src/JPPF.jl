@@ -31,6 +31,7 @@ const folderIndex = """
 ## Analysis Details: 
 * [Analysis](analysis)
 * [Input Data](inputData)
+* [Retirement](retirement)
 ## Analysis Configuration Summary: 
 """
 const analysisTemplate = """
@@ -180,8 +181,8 @@ function cleanseTransactions(dataDir, transFiles, config)
   syms=collect(skipmissing(map(stripMiss, tNames)))
   stocks=sort(filter(s -> !isnumeric(s[1]), syms))
   cds=sort(filter(s -> isnumeric(s[1]), syms))
-  holdings=split(config["Holdings"], ",")
-  (trans=transactions, syms=syms, stocks=stocks, cds=cds, holdings=holdings)
+  otherHoldings=split(config["Holdings"], ",")
+  (trans=transactions, syms=syms, stocks=stocks, cds=cds, otherHoldings=otherHoldings)
 end
 
 "Filter transactions"
@@ -217,7 +218,7 @@ function logData(io, tSum, config)
   @info "Stocks: $(tSum.stocks)"
   writeHTML(io, collectionHTML(tSum.stocks, "Stocks"))
   writeHTML(io, collectionHTML(tSum.cds, "CDS"))
-  writeHTML(io, collectionHTML(tSum.holdings, "Holdings"))
+  writeHTML(io, collectionHTML(tSum.otherHoldings, "Holdings"))
   
   #Summary information
   configTRE=config["RegularExpressions"]
@@ -248,14 +249,13 @@ function logAnalysis(io, tSum, config)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
   println(io, "Analysis DateTime: $started")
   holdings=buildHoldingsHistory(tSum.trans)
-  stockColl=[!isnothing(h.second.class) && isStock(h.second.class) ? h : nothing for h in holdings ]
-  stockHoldings=filter(isnothing, [isStock(h.second.class) ? h : nothing for h in holdings ] )
-  pl=getProfitandLossPerShare(stockHoldings)
-  plt=getProfitTotal(stockHoldings)
-  dispTable(io, pl, "Profit and Loss of holdings per Share")
-  dispTable(io, plt, "Profit and Loss of holdings total")
+  stockHoldings=filter(!isnothing, [!isnothing(h.class) && isStock(h.class) ? h : nothing for (s,h) in holdings ] )
+#  pl=getProfitandLossPerShare(stockHoldings)
+#  plt=getProfitTotal(stockHoldings)
+#  dispTable(io, pl, "Profit and Loss of holdings per Share")
+#  dispTable(io, plt, "Profit and Loss of holdings total")
 #  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
-  quarterSummary(io, tSum)
+#  quarterSummary(io, tSum)
   flush(io)
 end
 
