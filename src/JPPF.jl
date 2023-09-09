@@ -5,7 +5,7 @@ using Dates, Pkg, JSON, DataFrames
 include("PersonalFinance.jl")
 include("setupFranklin.jl")
 include("HTMLHelpers.jl")
-include("Common.jl")
+include("Holdings.jl")
 include("Match.jl")
 
 const version=Pkg.project().version
@@ -179,14 +179,14 @@ function cleanseTransactions(dataDir, transFiles, config)
   transactions=transform(transactions, :Action => ByRow(a -> getType(a, regularDict)) => :ActionCode)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
-  stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  Equitys=sort(filter(s -> !isnumeric(s[1]), syms))
   cds=sort(filter(s -> isnumeric(s[1]), syms))
   otherHoldings=split(config["Holdings"], ",")
-  (trans=transactions, syms=syms, stocks=stocks, cds=cds, otherHoldings=otherHoldings)
+  (trans=transactions, syms=syms, Equitys=Equitys, cds=cds, otherHoldings=otherHoldings)
 end
 
 "Filter transactions"
-isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
+isEquity(t)=length(t) > 0 && !isdigit(strip(t)[1])
 isCD(t::AbstractString)=length(t) > 0 && isdigit(strip(t)[1])
 isANY(t)=true
 
@@ -215,20 +215,20 @@ end
 "Log transaction information to the data web page"
 function logData(io, tSum, config)
   println(io, "Analysis Date: $today")
-  @info "Stocks: $(tSum.stocks)"
-  writeHTML(io, collectionHTML(tSum.stocks, "Stocks"))
+  @info "Equitys: $(tSum.Equitys)"
+  writeHTML(io, collectionHTML(tSum.Equitys, "Equitys"))
   writeHTML(io, collectionHTML(tSum.cds, "CDS"))
   writeHTML(io, collectionHTML(tSum.otherHoldings, "Holdings"))
   
   #Summary information
   configTRE=config["RegularExpressions"]
   filt(s,is)=filter([:Action, :Symbol] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , tSum.trans);
-  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isStock),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
+  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isEquity),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
   totM=reshape(collect(Iterators.flatten(tots)), (4,8))
   cols=totM[1,:]
   body=totM[2:end, :]
   totTab=DataFrame(body, cols)
-  dispTable(io, totTab, "Transaction Totals", ["Total", "Stock", "CD"],  true)  
+  dispTable(io, totTab, "Transaction Totals", ["Total", "Equity", "CD"],  true)  
   flush(io)
 end
 
@@ -249,9 +249,9 @@ function logAnalysis(io, tSum, config)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
   println(io, "Analysis DateTime: $started")
   holdings=buildHoldingsHistory(tSum.trans)
-  stockHoldings=filter(!isnothing, [!isnothing(h.class) && isStock(h.class) ? h : nothing for (s,h) in holdings ] )
-#  pl=getProfitandLossPerShare(stockHoldings)
-#  plt=getProfitTotal(stockHoldings)
+  EquityHoldings=filter(!isnothing, [!isnothing(h.class) && isEquity(h.class) ? h : nothing for (s,h) in holdings ] )
+#  pl=getProfitandLossPerShare(EquityHoldings)
+#  plt=getProfitTotal(EquityHoldings)
 #  dispTable(io, pl, "Profit and Loss of holdings per Share")
 #  dispTable(io, plt, "Profit and Loss of holdings total")
 #  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))

@@ -23,7 +23,7 @@ end
 
 function matchTransactionType(str)
 @match str begin
-    r"[A-Z]*"i => :Stock
+    r"[A-Z]*"i => :Equity
     r"[A-Z,0-9]*"i => :CD
     _ => nothing
   end
