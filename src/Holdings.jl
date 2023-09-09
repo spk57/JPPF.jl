@@ -60,12 +60,12 @@ end
 
 #Holding Constructors
 Holding(name::Symbol, description)=
-  Holding(name, matchTransactionType(name), description, 
+  Holding(name, matchAssetClass(name), description, 
     Dict{Date, AssetValue}(), Vector{EquityDailyPrice}())
-Holding(name::String, description)=Holding(Symbol(name), description)
-Holding(name::Symbol)=Holding(name, missing)
+#Holding(name::String, description)=Holding(Symbol(name), description)
+#Holding(name::Symbol)=Holding(name, missing)
 
-print(holding)=print("$(holding.name) $(holding.class)")
+#print(holding)=print("$(holding.name) $(holding.class)")
 get(holding, date)=holding.values[date]
 "Set the value for a change in a holding"
 function set(holding, date, value, quantity)

@@ -2,8 +2,8 @@ using Dates, JSON
 using ReTest
 
 jppfSrc="/home/steve/dev/projects/JPPF.jl/src"
-common=joinpath(jppfSrc, "Holdings.jl")
-include(common)
+holdingsjl=joinpath(jppfSrc, "Holdings.jl")
+include(holdingsjl)
 
 
 @testset "Common.jl" begin
@@ -32,6 +32,9 @@ end
   parsed=JSON.parse(reString)
   re=parsed["RegularExpressions"]
   reDict=formatRE(re)
-  @test getType(s1, reDict) == :Reinvestment
-  @test getType(s2, reDict)    == :Dividend  
+  @test getType(s1, reDict)   == :Reinvestment
+  @test getType(s2, reDict)   == :Dividend  
+  @test matchAssetClass("IBM")       == :Equity  
+  @test matchAssetClass("69355NBK0") == :CD  
+
 end

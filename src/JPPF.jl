@@ -175,7 +175,6 @@ function cleanseTransactions(dataDir, transFiles, config)
   cleanUp!(transactions, transactionMap)
   regularText=config["RegularExpressions"]
   regularDict=formatRE(regularText)
-#  getType(s)=getType(s, regularDict)
   transactions=transform(transactions, :Action => ByRow(a -> getType(a, regularDict)) => :ActionCode)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
@@ -194,7 +193,7 @@ isANY(t)=true
 function updateHolding!(holdingsHistory, transaction)
   sym=Symbol(transaction.Symbol)
   if !haskey(holdingsHistory, sym)
-    h=Holding(sym)
+    h=Holding(sym, transaction.Action)
     push!(holdingsHistory, sym =>  h)
   else
     h=holdingsHistory[sym]
@@ -272,5 +271,5 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   logAnalysis(control.analysis, tSum, control.config)
 end#run
 
-run("../jppfdata")
+#run("../jppfdata")
 end #module

@@ -21,11 +21,18 @@ function getType(str, reDict)
   length(nonMissing) > 0 ? nonMissing[1] : :Unmatched
 end
 
-function matchTransactionType(str)
-@match str begin
-    r"[A-Z]*"i => :Equity
-    r"[A-Z,0-9]*"i => :CD
-    _ => nothing
-  end
+function matchAssetClass(str)
+  eq=:Equity => r"^[A-Z]+$"
+  cd= :CD =>   r"^[A-Z,0-9]+$"i
+  typeList=Dict(eq,cd)
+  t=getType(String(str), typeList)
+  return t
 end
+# function matchTransactionType(str)
+# @match str begin
+#     r"[A-Z]*"i => :Equity
+#     r"[A-Z,0-9]*"i => :CD
+#     _ => nothing
+#   end
+# end
   
