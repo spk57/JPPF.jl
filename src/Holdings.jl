@@ -1,5 +1,5 @@
 # Common.jl
-using Dates, DataFrames
+using Dates, DataFrames, XLSX, InlineTest
 import Base.<, Base.==, Base.show, Base.string
 
 abstract type Asset end
@@ -62,8 +62,7 @@ end
 Holding(name::Symbol, description)=
   Holding(name, matchAssetClass(name), description, 
     Dict{Date, AssetValue}(), Vector{EquityDailyPrice}())
-#Holding(name::String, description)=Holding(Symbol(name), description)
-#Holding(name::Symbol)=Holding(name, missing)
+Holding(name::String, description)=Holding(Symbol(name), description)
 
 #print(holding)=print("$(holding.name) $(holding.class)")
 get(holding, date)=holding.values[date]
@@ -91,3 +90,47 @@ isEquity(cl::Symbol)=(cl==:Equity)
 #Holding(name::Symbol)=Holding(date, name, count, missing)
 #Base.string(h::Holding)=string(h.date,sep, h.name, sep, h.count, sep, h.value)
 #Base.show(io::IO, h::Holding)=show(io,string(h))
+
+"Add this entry to the Holding data structure"
+function updateHoldingHLOC(holding, high, low, open, close, date)
+  hloc=EquityDailyPrice(high, low, open, close, date)
+  push!(holding.prices, hloc)
+end
+
+"Read information for one holding price history"
+function readHoldingPriceHistory!(holding, path)
+  df = DataFrame(XLSX.readtable(path, holding.name))
+  map(e -> updateHoldingHLOC(holding, e.High, e.Low, e.Open, e.Close, e.timestamp))
+end
+
+@testset "Holdings1" begin
+  #Sample data for holdings
+    ibm=Holding(:IBM, "International Business Machines")
+    firstIBM=AssetValue(Date(2021,1,1), 100.0, 10.0, 10.0)
+    lastIBM =AssetValue(Date(2023,1,1), 120.0, 1.0, 11.0)
+    set(ibm, firstIBM)
+    set(ibm, lastIBM)
+     @test getFirst(ibm) == firstIBM
+     @test getLast(ibm) == lastIBM  
+  end
+  
+  @testset "Holdings2" begin
+    s1=" REINVESTMENT as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
+    s2=" DIVIDEND RECEIVED as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
+    reString="""{"RegularExpressions" : {
+    "Dividend" : ".*dividend.*",
+    "Reinvestment" : ".*reinvest.*"
+    }}"""
+    parsed=JSON.parse(reString)
+    re=parsed["RegularExpressions"]
+    reDict=formatRE(re)
+    @test getType(s1, reDict)   == :Reinvestment
+    @test getType(s2, reDict)   == :Dividend  
+    @test matchAssetClass("IBM")       == :Equity  
+    @test matchAssetClass("69355NBK0") == :CD  
+  end
+
+  @testset "Holdings3" begin
+    AMD=Holding(:AMD, "Advanced Micro Devices")
+    readHoldingPriceHistory!(AMD, "data/AMD.xlsx")
+  end

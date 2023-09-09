@@ -6,7 +6,7 @@ holdingsjl=joinpath(jppfSrc, "Holdings.jl")
 include(holdingsjl)
 
 
-@testset "Common.jl" begin
+@testset "Holdings1" begin
 #Sample data for holdings
   ibm=Holding(:IBM, "International Business Machines")
   firstIBM=AssetValue(Date(2021,1,1), 100.0, 10.0, 10.0)
@@ -22,7 +22,7 @@ include(holdingsjl)
 #  @test length(todayChanges) == 2
 end
 
-@testset "Match.jl" begin
+@testset "Holdings2" begin
   s1=" REINVESTMENT as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
   s2=" DIVIDEND RECEIVED as of 04/30/2023 JPMORGAN CHASE & CO (JPM) (Cash)"
   reString="""{"RegularExpressions" : {

@@ -1,6 +1,5 @@
 #Match.jl 
 #Matching functions
-using Match
 
 "create a copy dictionary of the RE's with RegularExpressions replacing the re string"
 function formatRE(re)
@@ -28,11 +27,4 @@ function matchAssetClass(str)
   t=getType(String(str), typeList)
   return t
 end
-# function matchTransactionType(str)
-# @match str begin
-#     r"[A-Z]*"i => :Equity
-#     r"[A-Z,0-9]*"i => :CD
-#     _ => nothing
-#   end
-# end
-  
+matchAssetClass(sym::Symbol)=matchAssetClass(String(sym))
