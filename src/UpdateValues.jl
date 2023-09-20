@@ -1,4 +1,4 @@
-#UjulipdateValues.jl
+#UpdateValues.jl
 #Get asset values 
 #Note: Currently only gets from Yahoo
 

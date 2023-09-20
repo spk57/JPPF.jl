@@ -1,5 +1,6 @@
 # Common.jl
-using Dates, DataFrames, XLSX, InlineTest
+using Dates, DataFrames,  InlineTest
+import XLSX
 import Base.<, Base.==, Base.show, Base.string
 
 abstract type Asset end
@@ -99,9 +100,37 @@ end
 
 "Read information for one holding price history"
 function readHoldingPriceHistory!(holding, path)
-  df = DataFrame(XLSX.readtable(path, holding.name))
-  map(e -> updateHoldingHLOC(holding, e.High, e.Low, e.Open, e.Close, e.timestamp))
+  prices=DataFrame(XLSX.readtable(path, string(holding.name), infer_eltypes=true));
+  map(e -> updateHoldingHLOC(holding, e.High, e.Low, e.Open, e.Close, e.timestamp), eachrow(prices))
 end
+
+"create a copy dictionary of the RE's with RegularExpressions replacing the re string"
+function formatRE(re)
+  d=Dict{Symbol, Regex}()
+  for rs in collect(keys(re))
+    s=Symbol(rs)
+    r=Regex(re[rs], "i")
+    push!(d, s => r)
+  end
+  return d
+end
+
+isMatch(b, k)=b ? k : missing
+function getType(str, reDict)
+  keyList=collect(keys(reDict))
+  m=map(k -> isMatch(occursin(reDict[k], str), k) , keyList) 
+  nonMissing=collect(skipmissing(m))
+  length(nonMissing) > 0 ? nonMissing[1] : :Unmatched
+end
+
+function matchAssetClass(str)
+  eq=:Equity => r"^[A-Z]+$"
+  cd= :CD =>   r"^[A-Z,0-9]+$"i
+  typeList=Dict(eq,cd)
+  t=getType(String(str), typeList)
+  return t
+end
+matchAssetClass(sym::Symbol)=matchAssetClass(String(sym))
 
 @testset "Holdings1" begin
   #Sample data for holdings
@@ -132,5 +161,6 @@ end
 
   @testset "Holdings3" begin
     AMD=Holding(:AMD, "Advanced Micro Devices")
-    readHoldingPriceHistory!(AMD, "data/AMD.xlsx")
+    amdHistory=readHoldingPriceHistory!(AMD, "data/AMD.xlsx")
+    @test size(amdHistory,2)== 1
   end

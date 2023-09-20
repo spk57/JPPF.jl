@@ -6,7 +6,7 @@ include("PersonalFinance.jl")
 include("setupFranklin.jl")
 include("HTMLHelpers.jl")
 include("Holdings.jl")
-include("Match.jl")
+#include("Match.jl") TODO Remove file
 
 const version=Pkg.project().version
 const today=Dates.today()
@@ -32,6 +32,7 @@ const folderIndex = """
 * [Analysis](analysis)
 * [Input Data](inputData)
 * [Retirement](retirement)
+* [Salary](salary)
 ## Analysis Configuration Summary: 
 """
 const analysisTemplate = """
@@ -202,12 +203,16 @@ function updateHolding!(holdingsHistory, transaction)
 end
 
 "Use the transaction history to build a history of holdings"
-function buildHoldingsHistory(transactions)
-  #Transactions that change the amount of assets owned
+function buildHoldingsHistory(transactions, dataDir)
+  "Build a path for a price history excel file"
+  histPath(name)=joinpath(dataDir, string(name, ".xlsx"))
+    #Transactions that change the amount of assets owned
   buySellcodes=[:Bought, :Sold, :Reinvestment] 
   fTransactions=filter(t -> t.ActionCode in buySellcodes,  transactions)
   holdingsHistory=Dict{Symbol, Holding}()
   map(ft -> updateHolding!(holdingsHistory, ft), eachrow(fTransactions))
+  hList=collect(keys(holdingsHistory))
+  [readHoldingPriceHistory!(histPath(holdingsHistory[k]), dataDir) for k in hList]#TODO Prices not updating
   return holdingsHistory
 end
 
@@ -244,10 +249,10 @@ end
 "Calculate the profit and loss for a holding"
 getProfitandLoss(holdings)=map(h-> (h, getProfit(holdings[h])), sort(collect(keys(holdings))))
 
-function logAnalysis(io, tSum, config)
+function logAnalysis(io, tSum, config, dataDir)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
   println(io, "Analysis DateTime: $started")
-  holdings=buildHoldingsHistory(tSum.trans)
+  holdings=buildHoldingsHistory(tSum.trans, dataDir)
   EquityHoldings=filter(!isnothing, [!isnothing(h.class) && isEquity(h.class) ? h : nothing for (s,h) in holdings ] )
 #  pl=getProfitandLossPerShare(EquityHoldings)
 #  plt=getProfitTotal(EquityHoldings)
@@ -268,8 +273,8 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   @info "CleanseTransactions complete"
   logData(control.input, tSum, control.config)
   @info "logData Complete"
-  logAnalysis(control.analysis, tSum, control.config)
+  logAnalysis(control.analysis, tSum, control.config, dataDir)
 end#run
 
-#run("../jppfdata")
+run("../jppfdata")
 end #module
