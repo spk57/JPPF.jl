@@ -1,0 +1,13 @@
+name = "schedule"
+uuid = "f70ce2ab-6f85-420c-a573-5b38e607b029"
+authors = ["spk57 <spk57@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Formatting = "59287772-0a20-5a39-b81b-1366585eb4c0"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+JobSchedulers = "eeff360b-c02d-44d3-ab26-4013c616a17e"
+MarketData = "945b72a4-3b13-509d-9b46-1525bb5c06de"
+XLSX = "fdbf4ff8-1666-58a4-91e7-1b58723a45e0"

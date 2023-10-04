@@ -4,25 +4,10 @@
 
 using DataFrames,Dates, Formatting, XLSX, MarketData, JSON
 
-firstDate=DateTime(2021,1,1)
-"Calculate the previous business day (M-F"
-function lastBusinessDay(d)
-  dow=Dates.dayofweek(d)
-  if dow in [2,3,4,5,6] #T-Sa
-    offset=1
-  elseif dow == 1 #M
-    offset=3
-  else
-    offset=2 #Su
-  end
-  d-Dates.Day(offset)
-end
-
 "Get the High Low Open Close from Yahoo"
-function getHLOC(ticker, first, last=nothing)
-  lastDate(last)=isnothing(last) ?  lastBusinessDay(now()) : lastBusinessDay(last) 
+function getHLOC(ticker, first::DateTime, last=DateTime(today()))
   try 
-    df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=lastDate(last))))
+    df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=last)))
   catch
     display("Unable to find ticker $ticker for $first")
     return missing
@@ -34,10 +19,11 @@ function getHLOC(ticker, first, last=nothing)
 end
 
 "Read the history file and update or create if it does not exist"
-function updateHistory(ticker, path, first, saveOld=true)
+function updateHistory(ticker, path, first::DateTime, saveOld=true)
   @info "Writing $ticker"
   tickerFileName=joinpath(path, ticker*".xlsx")
   hloc=getHLOC(ticker, first)
+  if ismissing(hloc) return missing end
   tickerFile = if isfile(tickerFileName)
     df=DataFrame(XLSX.readtable(tickerFileName, 1))
     saveName=string(tickerFileName, "-", today(), ".save")
@@ -65,7 +51,7 @@ function getTickers(path)
   end
 end
 
-function main(ARGS)
+function main(ARGS=ARGS)
   today=DateTime(Dates.today())
   @info "Started UpdateValues.jl @ $today"
   l=length(ARGS)
