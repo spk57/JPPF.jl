@@ -51,7 +51,6 @@ function getTickers(path)
   end
 end
 
-const cron=Cron(0,0,0,0,0,"2-6")
 const c=Channel(2)
 
 "Get daily updates from cloud for asssets"
@@ -72,10 +71,10 @@ function parseCommandLine()
   @add_arg_table! s begin
      "--config", "-c"
      help = "Path to the configuration file"
-     default="../data/tickers.json"
+     default="data/tickers.json"
      "--output", "-o"
      help = "Path to the output directory"
-     default="../output"
+     default="output"
   end
   return parse_args(s)
 end
