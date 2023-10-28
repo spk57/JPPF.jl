@@ -1,5 +1,5 @@
 # Common.jl
-using Dates, DataFrames,  InlineTest
+using Dates, DataFrames,  InlineTest, JSON
 import XLSX
 import Base.<, Base.==, Base.show, Base.string
 
@@ -164,3 +164,4 @@ matchAssetClass(sym::Symbol)=matchAssetClass(String(sym))
     amdHistory=readHoldingPriceHistory!(AMD, "data/AMD.xlsx")
     @test size(amdHistory,2)== 1
   end
+#  runtest()
