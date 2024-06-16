@@ -40,7 +40,7 @@ end
 
 logmsg(msg)=string(now(), " ", msg)
 rows(df::DataFrame)=size(df, 1)
-readxl(file, sheet)=DataFrame(XLSX.readtable(file, sheet)...)
+readxl(file, sheet)=DataFrame(XLSX.readtable(file, sheet))
 
 "Growth Type "
 abstract type Growth end
@@ -80,9 +80,10 @@ end
 pushRow!(d, df, row)=push!(d, df[row,1] => df[row,2])
 
 "Create a dictionary from name value pairs in a dataframe"
+#TODO All of this should be moved to JSON file from xlsx
 function df2Dict!(df)
   d = Dict{String, Any}()
-  map(r -> pushRow!(d, df, r), eachrow(df))
+  map(r -> pushRow!(d, df, r), 1:size(df,1))
   d
 end
 
@@ -304,7 +305,7 @@ function run(ARGS)
   expenseMap=mapGrowthFactors(initialExpenses)
   @debug "expenseMap: $expenseMap"
   assetsMap=mapGrowthFactors(initialAssets)
-  @debug "assetMap: $assetMap"
+  @debug "assetMap: $assetsMap"
   liabilityMap=mapGrowthFactors(initialLiabilities)
   @debug "liabilityMap: $liabilityMap"
   openLoans(liabilityMap)

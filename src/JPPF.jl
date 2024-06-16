@@ -206,13 +206,14 @@ end
 function buildHoldingsHistory(transactions, dataDir)
   "Build a path for a price history excel file"
   histPath(name)=joinpath(dataDir, string(name, ".xlsx"))
+  @info "Price history being logged to $histPath"
     #Transactions that change the amount of assets owned
   buySellcodes=[:Bought, :Sold, :Reinvestment] 
   fTransactions=filter(t -> t.ActionCode in buySellcodes,  transactions)
   holdingsHistory=Dict{Symbol, Holding}()
   map(ft -> updateHolding!(holdingsHistory, ft), eachrow(fTransactions))
-  hList=collect(keys(holdingsHistory))
-  [readHoldingPriceHistory!(histPath(holdingsHistory[k]), dataDir) for k in hList]#TODO Prices not updating
+#  hList=collect(keys(holdingsHistory))
+#  [readHoldingPriceHistory!(histPath(holdingsHistory[k]), dataDir) for k in hList]#TODO Prices not updating
   return holdingsHistory
 end
 
@@ -251,7 +252,7 @@ getProfitandLoss(holdings)=map(h-> (h, getProfit(holdings[h])), sort(collect(key
 
 function logAnalysis(io, tSum, config, dataDir)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
-  println(io, "Analysis DateTime: $started")
+  @info "Analysis DateTime: $started"
   holdings=buildHoldingsHistory(tSum.trans, dataDir)
   EquityHoldings=filter(!isnothing, [!isnothing(h.class) && isEquity(h.class) ? h : nothing for (s,h) in holdings ] )
 #  pl=getProfitandLossPerShare(EquityHoldings)
@@ -274,6 +275,7 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   logData(control.input, tSum, control.config)
   @info "logData Complete"
   logAnalysis(control.analysis, tSum, control.config, dataDir)
+  @info "logAnalysis Complete"
 end#run
 
 run("../jppfdata")
