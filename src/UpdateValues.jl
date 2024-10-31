@@ -1,28 +1,13 @@
-#UjulipdateValues.jl
-#Get asset values 
+#UpdateValues.jl
+#Script to create a schedule job to get asset values 
 #Note: Currently only gets from Yahoo
 
-using DataFrames,Dates, Formatting, XLSX, MarketData, JSON
-
-firstDate=DateTime(2021,1,1)
-"Calculate the previous business day (M-F"
-function lastBusinessDay(d)
-  dow=Dates.dayofweek(d)
-  if dow in [2,3,4,5,6] #T-Sa
-    offset=1
-  elseif dow == 1 #M
-    offset=3
-  else
-    offset=2 #Su
-  end
-  d-Dates.Day(offset)
-end
+using DataFrames,Dates, Formatting, XLSX, MarketData, JSON, ArgParse
 
 "Get the High Low Open Close from Yahoo"
-function getHLOC(ticker, first, last=nothing)
-  lastDate(last)=isnothing(last) ?  lastBusinessDay(now()) : lastBusinessDay(last) 
+function getHLOC(ticker, first::DateTime, last=DateTime(today()))
   try 
-    df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=lastDate(last))))
+    df=DataFrame(yahoo(ticker, YahooOpt(period1=first, period2=last)))
   catch
     display("Unable to find ticker $ticker for $first")
     return missing
@@ -34,10 +19,11 @@ function getHLOC(ticker, first, last=nothing)
 end
 
 "Read the history file and update or create if it does not exist"
-function updateHistory(ticker, path, first, saveOld=true)
+function updateHistory(ticker, path, first::DateTime, saveOld=true)
   @info "Writing $ticker"
   tickerFileName=joinpath(path, ticker*".xlsx")
   hloc=getHLOC(ticker, first)
+  if ismissing(hloc) return missing end
   tickerFile = if isfile(tickerFileName)
     df=DataFrame(XLSX.readtable(tickerFileName, 1))
     saveName=string(tickerFileName, "-", today(), ".save")
@@ -65,33 +51,47 @@ function getTickers(path)
   end
 end
 
-function main(ARGS)
-  today=DateTime(Dates.today())
-  @info "Started UpdateValues.jl @ $today"
-  l=length(ARGS)
-  (tickersPath, outputPath, days) =if l == 2
-    ARGS[1], ARGS[2], :All
-  else
-    (tickersPath,outputPath, days ) = if l==3
-      ARGS[1], ARGS[2], ARGS[3]
-    else
-      @error "Args: $ARGS"
-      throw(ArgumentError("Illegal number of arguments. Expected 2 or 3, found $l : syntax: julia UpdateValues.jl tickerPath outputPath [days]"))
-    end
-  end
-  if lowercase(days) == "all"
-    first=firstDate
-  else
-    first=today-Dates.Day(parse(Int, days))
-  end
-  @info "First date = $first"
+const c=Channel(2)
+
+"Get daily updates from cloud for asssets"
+function updateJob()
+  first=DateTime(today()-Dates.Day(1))
+  tickersPath=take!(c)    
+  outputPath=take!(c)
+  @info "Processing Tickers File:  $tickersPath"
   tickers=getTickers(tickersPath)
-  @info "Processing Tickers $tickers"
+  @info "Read Tickers File:  $tickers"
+  @info "Updating history files"
   map(t -> updateHistory(t, outputPath, first), tickers)
+  @info "Processing Complete"
 end
 
-main(ARGS)
-#date=DateTime(2021,8,20)
-#df=DataFrame(yahoo("MRNA", YahooOpt(period1=date)))
-#getHLOC("MRNA", date)
-#updateHistory("MRNA", "../test/MRNA.xlsx")
+function parseCommandLine()
+  s = ArgParseSettings()
+  @add_arg_table! s begin
+     "--config", "-c"
+     help = "Path to the configuration file"
+     default="data/tickers.json"
+     "--output", "-o"
+     help = "Path to the output directory"
+     default="output"
+  end
+  return parse_args(s)
+end
+
+"Parse command line and schedule repeated downloads for schedule"
+function main()
+  parsed=parseCommandLine()
+
+  tickersPath=parsed["config"]
+  put!(c,tickersPath)
+  @info "Using Ticker File: $tickersPath"
+
+  outputPath=parsed["output"]
+  put!(c,outputPath)
+  @info "Saving to folder: $outputPath"
+
+  updateJob()
+end
+
+main()

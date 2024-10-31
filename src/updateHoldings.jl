@@ -1,7 +1,8 @@
 #Update Holdings.jl
 using DataFrames, Dates, XLSX
-include("Common.jl")
-#TODO Merge this with Common.jl
+include("Holdings.jl")
+#TODO Merge this with Holdings.jl
+#TODO Update for changes to Holdings.jl
 const holdingsChanges=Vector{Holding}()
 holdings=Vector{Holding}()
 

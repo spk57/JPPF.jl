@@ -5,7 +5,8 @@ using Dates, Pkg, JSON, DataFrames
 include("PersonalFinance.jl")
 include("setupFranklin.jl")
 include("HTMLHelpers.jl")
-include("Common.jl")
+include("Holdings.jl")
+#include("Match.jl") TODO Remove file
 
 const version=Pkg.project().version
 const today=Dates.today()
@@ -30,6 +31,8 @@ const folderIndex = """
 ## Analysis Details: 
 * [Analysis](analysis)
 * [Input Data](inputData)
+* [Retirement](retirement)
+* [Salary](salary)
 ## Analysis Configuration Summary: 
 """
 const analysisTemplate = """
@@ -171,46 +174,66 @@ function cleanseTransactions(dataDir, transFiles, config)
   trs=map(tp -> readTab(tp, 1), transPaths) #Rename columns to match expected
   transactions=reduce(vcat, trs,  cols=:union) #Merge transaction files
   cleanUp!(transactions, transactionMap)
+  regularText=config["RegularExpressions"]
+  regularDict=formatRE(regularText)
+  transactions=transform(transactions, :Action => ByRow(a -> getType(a, regularDict)) => :ActionCode)
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
-  stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  Equitys=sort(filter(s -> !isnumeric(s[1]), syms))
   cds=sort(filter(s -> isnumeric(s[1]), syms))
-  holdings=split(config["Holdings"], ",")
-  (trans=transactions, syms=syms, stocks=stocks, cds=cds, holdings=holdings)
+  otherHoldings=split(config["Holdings"], ",")
+  (trans=transactions, syms=syms, Equitys=Equitys, cds=cds, otherHoldings=otherHoldings)
 end
 
 "Filter transactions"
-isStock(t)=length(t) > 0 && !isdigit(strip(t)[1])
-isCD(t)=length(t) > 0 && isdigit(strip(t)[1])
+isEquity(t)=length(t) > 0 && !isdigit(strip(t)[1])
+isCD(t::AbstractString)=length(t) > 0 && isdigit(strip(t)[1])
 isANY(t)=true
 
-function updateHolding(holdingsHistory, transaction)
-  filt(s,is)=filter([:Action, :Symbol, :Quantity, :Amount ] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , transactions);
+"add or update holding history from the transaction"
+function updateHolding!(holdingsHistory, transaction)
+  sym=Symbol(transaction.Symbol)
+  if !haskey(holdingsHistory, sym)
+    h=Holding(sym, transaction.Action)
+    push!(holdingsHistory, sym =>  h)
+  else
+    h=holdingsHistory[sym]
+  end
+  set(h, transaction.Date, transaction.Value, transaction.Quantity)
 end
 
 "Use the transaction history to build a history of holdings"
-function buildHoldingsHistory(transactions)
-  holdingsHistory=Array{Holding}()
-  #:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR 
+function buildHoldingsHistory(transactions, dataDir)
+  "Build a path for a price history excel file"
+  histPath(name)=joinpath(dataDir, string(name, ".xlsx"))
+  @info "Price history being logged to $histPath"
+    #Transactions that change the amount of assets owned
+  buySellcodes=[:Bought, :Sold, :Reinvestment] 
+  fTransactions=filter(t -> t.ActionCode in buySellcodes,  transactions)
+  holdingsHistory=Dict{Symbol, Holding}()
+  map(ft -> updateHolding!(holdingsHistory, ft), eachrow(fTransactions))
+#  hList=collect(keys(holdingsHistory))
+#  [readHoldingPriceHistory!(histPath(holdingsHistory[k]), dataDir) for k in hList]#TODO Prices not updating
+  return holdingsHistory
 end
 
 "Log transaction information to the data web page"
 function logData(io, tSum, config)
   println(io, "Analysis Date: $today")
-  @info "Stocks: $(tSum.stocks)"
-  writeHTML(io, collectionHTML(tSum.stocks, "Stocks"))
+  @info "Equitys: $(tSum.Equitys)"
+  writeHTML(io, collectionHTML(tSum.Equitys, "Equitys"))
   writeHTML(io, collectionHTML(tSum.cds, "CDS"))
-  writeHTML(io, collectionHTML(tSum.holdings, "Holdings"))
+  writeHTML(io, collectionHTML(tSum.otherHoldings, "Holdings"))
   
   #Summary information
   configTRE=config["RegularExpressions"]
   filt(s,is)=filter([:Action, :Symbol] => (a,sym) -> occursin(Regex(configTRE[s],"i"), a) && is(sym) , tSum.trans);
-  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isStock),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
+  tots=sort(map(k -> [k,  size(filt(k, isANY),1), size(filt(k, isEquity),1), size(filt(k,isCD),1)], collect(keys(configTRE))))
   totM=reshape(collect(Iterators.flatten(tots)), (4,8))
   cols=totM[1,:]
   body=totM[2:end, :]
   totTab=DataFrame(body, cols)
-  dispTable(io, totTab, "Transaction Totals", ["Total", "Stock", "CD"],  true)  
+  dispTable(io, totTab, "Transaction Totals", ["Total", "Equity", "CD"],  true)  
   flush(io)
 end
 
@@ -220,15 +243,24 @@ function quarterSummary(io, tSum)
   qsym=groupby(transactions, [:Symbol, :YQTR])
   qsymAmt=combine(qsym, :Amount =>ByRow(+) => :Amount, :Symbol)
   @info "QSym Amt: $qsymAmt"
-  tsm=filter(:Symbol => s -> s=="TSM", transactions)
-  dispTable(io, tsm,"TSM")
+#  tsm=filter(:Symbol => s -> s=="TSM", transactions)
+#  dispTable(io, tsm,"TSM")
 end
 
-function logAnalysis(io, tSum, config)
+"Calculate the profit and loss for a holding"
+getProfitandLoss(holdings)=map(h-> (h, getProfit(holdings[h])), sort(collect(keys(holdings))))
+
+function logAnalysis(io, tSum, config, dataDir)
   startDate=Date(config["StartDate"], "dd-u-yyyy")
-  println(io, "Analysis DateTime: $started")
+  @info "Analysis DateTime: $started"
+  holdings=buildHoldingsHistory(tSum.trans, dataDir)
+  EquityHoldings=filter(!isnothing, [!isnothing(h.class) && isEquity(h.class) ? h : nothing for (s,h) in holdings ] )
+#  pl=getProfitandLossPerShare(EquityHoldings)
+#  plt=getProfitTotal(EquityHoldings)
+#  dispTable(io, pl, "Profit and Loss of holdings per Share")
+#  dispTable(io, plt, "Profit and Loss of holdings total")
 #  quarters=collect(startDate:Quarter(1):lastdayofquarter(today()))
-  quarterSummary(io, tSum)
+#  quarterSummary(io, tSum)
   flush(io)
 end
 
@@ -242,7 +274,8 @@ function run(dataDir="data", configFile="config.json", clearVersions=true)
   @info "CleanseTransactions complete"
   logData(control.input, tSum, control.config)
   @info "logData Complete"
-  logAnalysis(control.analysis, tSum, control.config)
+  logAnalysis(control.analysis, tSum, control.config, dataDir)
+  @info "logAnalysis Complete"
 end#run
 
 run("../jppfdata")

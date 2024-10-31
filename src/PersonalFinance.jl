@@ -1,6 +1,5 @@
 #PersonalFinance.jl
 
-using DataFrames: Dict
 using Dates, DataFrames, XLSX, Polynomials, HypertextLiteral
 
 assetHistoryTab="AssetHistory";
@@ -18,6 +17,12 @@ stringToDate(s)=Date(strip(s),df)
 "Get year of century and quarter of year from date"
 yic(y)=string(year(y)-2000, "Q", quarterofyear(y))
 
+function getTransactionAction(s, filters)
+  matches=map(f -> match(s, f), !isnothing, filters)
+  #clean up regex to return the action 
+  action=map(!isnothing, matches)
+end
+
 "Clean up columns and data"
 function cleanUp!(transactions, transactionMap)
   symToCol(sym)=Int(sym)-Int('A')+1
@@ -32,6 +37,7 @@ function cleanUp!(transactions, transactionMap)
   transform!(transactions, :Date => ByRow(yic) => :YQTR)
   transactions.Amount=-(convert.(Float64, transactions.Amount));
   transactions.Quantity=convert.(Float64, transactions.Quantity)
+  transactions.Value.=transactions.Amount ./ transactions.Quantity
   transactions=transactions[!,[:Date, :Action, :Symbol, :Quantity, :Amount, :YQTR ]]
 end
 

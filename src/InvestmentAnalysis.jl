@@ -1,6 +1,6 @@
 ### A Pluto.jl notebook ###
 # v0.17.5
-
+#Obsolete
 using Markdown
 using InteractiveUtils
 
@@ -90,7 +90,7 @@ begin
   tNames=unique(transactions[!,:Symbol]) # Get unique named transactions
   syms=collect(skipmissing(map(stripMiss, tNames)))
   syms=map(strip, syms)
-  stocks=sort(filter(s -> !isnumeric(s[1]), syms))
+  Equitys=sort(filter(s -> !isnumeric(s[1]), syms))
   cds=sort(filter(s -> isnumeric(s[1]), syms))
   holdings=split(config["Holdings"], ",")
   if dData

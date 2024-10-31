@@ -33,3 +33,4 @@ Technology usage: Julia, Excel, Jupyter
 ### Update investment values
 1.  TODO Add investments to lookup list
 2.  TODO create a cron job to update list on a schedule
+
