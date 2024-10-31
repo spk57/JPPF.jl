@@ -1,6 +1,6 @@
 # JPPF
 ## Julia Programmers Personal Finance Tools
- 
+<i>This is very much a work in progress</i> 
 This is a collection of tools which can be used by a programmer to help manage personal finance.  I started this activity becuase commercial tools lack the flexibility I was looking for.   The approach is to leverage standard tools like Excel, Jupyter. This is not intended for conusmers.  It is intended for developers who want a flexible tool to manage their own personal finances. This was written in Julia,  because its my favorite language.  
 
 * Budget Analysis
