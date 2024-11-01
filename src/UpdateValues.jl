@@ -51,14 +51,28 @@ function getTickers(path)
   end
 end
 
-const c=Channel(2)
-
-"Get daily updates from cloud for asssets"
-function updateJob()
-  first=DateTime(today()-Dates.Day(1))
-  tickersPath=take!(c)    
-  outputPath=take!(c)
-  @info "Processing Tickers File:  $tickersPath"
+function main(ARGS)
+  today=DateTime(Dates.today())
+  @info "Started UpdateValues.jl @ $today"
+  l=length(ARGS)
+  (tickersPath, outputPath, days) =if l == 2
+    ARGS[1], ARGS[2], :All
+  else
+    (tickersPath,outputPath, days ) = if l==3
+      ARGS[1], ARGS[2], ARGS[3]
+    else
+      @error "Args: $ARGS"
+      println("ARGS: tickersPath outputPath <days>")
+      println("  <days> default = all")
+      throw(ArgumentError("Illegal number of arguments. Expected 2 or 3, found $l : syntax: julia UpdateValues.jl tickerPath outputPath [days]"))
+    end
+  end
+  if lowercase(days) == "all"
+    first=firstDate
+  else
+    first=today-Dates.Day(parse(Int, days))
+  end
+  @info "First date = $first"
   tickers=getTickers(tickersPath)
   @info "Read Tickers File:  $tickers"
   @info "Updating history files"
