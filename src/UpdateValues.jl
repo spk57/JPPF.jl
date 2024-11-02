@@ -1,9 +1,10 @@
 #UpdateValues.jl
 #Script to create a schedule job to get asset values 
-#Note: Currently only gets from Yahoo
+#Note: Currently only gets data from Yahoo
 
 using DataFrames,Dates, Formatting, XLSX, MarketData, JSON, ArgParse
 
+const firstDate = DateTime(2020, 1,1)
 "Get the High Low Open Close from Yahoo"
 function getHLOC(ticker, first::DateTime, last=DateTime(today()))
   try 
@@ -55,16 +56,17 @@ function main(ARGS)
   today=DateTime(Dates.today())
   @info "Started UpdateValues.jl @ $today"
   l=length(ARGS)
-  (tickersPath, outputPath, days) =if l == 2
-    ARGS[1], ARGS[2], :All
+  (tickersPath, outputPath, days) =if l == 4
+    ARGS[2], ARGS[4], "All"
   else
-    (tickersPath,outputPath, days ) = if l==3
-      ARGS[1], ARGS[2], ARGS[3]
+    (tickersPath,outputPath, days ) = if l==6
+      ARGS[2], ARGS[4], ARGS[6]
     else
       @error "Args: $ARGS"
-      println("ARGS: tickersPath outputPath <days>")
+      println("ARGS: tickersPath outputPath [days]")
       println("  <days> default = all")
-      throw(ArgumentError("Illegal number of arguments. Expected 2 or 3, found $l : syntax: julia UpdateValues.jl tickerPath outputPath [days]"))
+      println("Found args: $ARGS")
+      throw(ArgumentError("Illegal number of arguments. Expected 2 or 3 "))
     end
   end
   if lowercase(days) == "all"
@@ -108,4 +110,4 @@ function main()
   updateJob()
 end
 
-main()
+main(ARGS)

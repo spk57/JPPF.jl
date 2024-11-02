@@ -1,4 +1,23 @@
-{"trackList": [
-  "AMD", "INTC", "JPM" 
-]
-} 
+{"Config" :{
+    "investmentFile" : "Investments.xlsx",
+    "webFolder"      : "franklin", 
+    "transactionFile" : "Transactions.xlsx", 
+    "transactionMap" : {
+      "Action"   : "B", 
+      "Symbol"   : "E", 
+      "Quantity" : "G", 
+      "Amount"   : "F" 
+    },
+    "Holdings" : "House, Pension", 
+    "RegularExpressions" : {
+      "Dividend" : "dividend",
+      "Interest" : "interest",
+      "Reinvestment" : "reinvest",
+      "Bought" : "bought",
+      "Sold" : "sold",
+      "Transfer" : "transfer",
+      "ForeignTax" : "foreign",
+      "Merger" : "merger"
+    }
+  }
+}
